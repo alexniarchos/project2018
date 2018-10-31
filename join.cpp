@@ -5,6 +5,7 @@
 using namespace std;
 
 #define divisor 3 //hash function 2 mod value
+#define bufsize 40 //size of bytes for each listnode tuple array
 
 struct Tuple {
     int32_t key;
@@ -14,6 +15,73 @@ struct Tuple {
 struct result {
     int32_t rowId1;
     int32_t rowId2;
+};
+
+class listnode{
+    public:
+
+    listnode *next;
+    int *tuples;
+
+    listnode(){
+        next = NULL;
+        tuples = (int*)malloc(bufsize);
+    }
+
+    void add(int tupleCount,int num1,int num2){
+        int index = tupleCount % (bufsize/sizeof(int));
+        cout << "index = " << index << endl;
+        tuples[index] = num1;
+        tuples[index+1] = num2;
+    }
+};
+
+class list{
+    public:
+
+    int tupleCount;
+    listnode *head=NULL;
+
+    list(){
+        tupleCount = 0;
+    }
+
+    void add(int num1,int num2){
+        listnode *temp;
+        if(head==NULL){//first add to list
+            head = new listnode();
+            temp=head;
+        }
+        else{
+            temp=head;
+            while(temp->next!=NULL){//get to the tail of the list
+                temp = temp->next;
+            }
+            if(tupleCount % (bufsize/sizeof(int)) == 0){//buffer is full create new one
+                temp->next = new listnode();
+                temp = temp->next;
+            }
+        }
+
+        temp->add(tupleCount,num1,num2);
+        tupleCount+=2;//there are two ints in each node
+    }
+
+    void print(){
+        cout << "Printing...\nSizeof(int) = " << sizeof(int) << endl;
+        listnode *temp = head;
+        while(temp!=NULL){
+            cout << "---end of buffer---" << endl;
+            for(int i=0;i<bufsize/sizeof(int) - 1;i+=2){
+                cout << temp->tuples[i] << " , " << temp->tuples[i+1] << endl;
+            }
+            temp = temp->next;
+        }
+    }
+
+    ~list(){
+        // free listnodes
+    }
 };
 
 int32_t dec_to_bin(int32_t decimal) {
@@ -206,6 +274,7 @@ void create_indexing(int numofbuckets,int numofentries,Tuple *table,int32_t* his
 
 void getResults(int n,Tuple *A,int A_numofentries, Tuple *B,int32_t *chain, int32_t *bucket){
     int h1,h2,chainVal,chainPos;
+    list *l = new list();
     for(int i=0;i<A_numofentries;i++){
         h1 = hashvalue(dec_to_bin(A[i].payload),n);
         h2 = hashfun2(A[i].payload);
@@ -217,6 +286,7 @@ void getResults(int n,Tuple *A,int A_numofentries, Tuple *B,int32_t *chain, int3
             // cout << "comparing: " << B[chainPos].payload << " == " << A[i].payload << endl;
             if(B[chainPos].payload == A[i].payload){
                 cout << A[i].key << "," << B[chainPos].key << endl;
+                l->add(A[i].key,B[chainPos].key);
             }
             // cout << "chainPos = " << chainPos << endl;
             if(chain[chainPos] == -1){
@@ -225,6 +295,8 @@ void getResults(int n,Tuple *A,int A_numofentries, Tuple *B,int32_t *chain, int3
             chainPos = chain[chainPos];
         }
     }
+    // print list
+    l->print();
 }
 
 void free_memory(Tuple** a,Tuple** hash,int32_t** hist,int32_t** psum)
