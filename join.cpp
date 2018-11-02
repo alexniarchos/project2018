@@ -7,8 +7,10 @@
 
 using namespace std;
 
-#define divisor 3 //hash function 2 mod value
+#define divisor 13 //hash function 2 mod value
 #define bufsize 40 //size of bytes for each listnode tuple array
+
+int noresults;
 
 struct Tuple {
     int key;
@@ -24,18 +26,22 @@ class listnode{
     public:
 
     listnode *next;
-    int *tuples;
+    result *tuples;
 
     listnode(){
         next = NULL;
-        tuples = (int*)malloc(bufsize);
+        tuples = (result*)malloc(bufsize);
+        memset(tuples,0,bufsize);
     }
 
     void add(int tupleCount,int num1,int num2){
-        int index = tupleCount % (bufsize/sizeof(int));
-        cout << "index = " << index << endl;
-        tuples[index] = num1;
-        tuples[index+1] = num2;
+        int index = tupleCount % (bufsize/sizeof(result));
+        tuples[index].rowId1 = num1;
+        tuples[index].rowId2 = num2;
+    }
+
+    ~listnode(){
+        free(tuples);
     }
 };
 
@@ -60,30 +66,42 @@ class list{
             while(temp->next!=NULL){//get to the tail of the list
                 temp = temp->next;
             }
-            if(tupleCount % (bufsize/sizeof(int)) == 0){//buffer is full create new one
+            if(tupleCount % (bufsize/sizeof(result)) == 0){//buffer is full create new one
                 temp->next = new listnode();
                 temp = temp->next;
             }
         }
 
         temp->add(tupleCount,num1,num2);
-        tupleCount+=2;//there are two ints in each node
+        tupleCount+=1;
     }
 
     void print(){
-        cout << "Printing...\nSizeof(int) = " << sizeof(int) << endl;
+        cout << "Printing result list..." << endl;
+        int sum=0,limit;
         listnode *temp = head;
         while(temp!=NULL){
-            cout << "---end of buffer---" << endl;
-            for(int i=0;i<bufsize/sizeof(int) - 1;i+=2){
-                cout << temp->tuples[i] << " , " << temp->tuples[i+1] << endl;
+            sum+=bufsize/sizeof(result);
+            limit = bufsize/sizeof(result);
+            if(sum > noresults){
+                limit = noresults % (bufsize/sizeof(result));
+            }
+            for(int i=0;i<limit;i++){
+                cout << temp->tuples[i].rowId1 << " , " << temp->tuples[i].rowId2 << endl;
             }
             temp = temp->next;
+            cout << "---end of buffer---" << endl;
         }
     }
 
     ~list(){
         // free listnodes
+        listnode *temp = head,*next;
+        while(temp!=NULL){
+            next = temp->next;
+            delete temp;
+            temp = next;
+        }
     }
 };
 
@@ -121,7 +139,6 @@ void init_and_get_values(int* n,int* numofentries,int* numofbuckets,Tuple** a,Tu
 {   
     //get values and calculate sizes
     *n=3;
-    // *numofentries=10;
     *numofbuckets=1;
     for(int i=0;i<*n;i++){
         *numofbuckets*=2;
@@ -156,10 +173,7 @@ void init_and_get_values(int* n,int* numofentries,int* numofbuckets,Tuple** a,Tu
 void sort_hashtable(int n,int numofentries,int numofbuckets,Tuple* a,Tuple** hash,int** hist,int** psum){
     for(int i=0;i<numofentries;i++){
         int temp_binary=dec_to_bin(a[i].payload);
-        cout<<"rowId = "<< a[i].key << " payload = " << a[i].payload << endl;
-        cout<<temp_binary<<endl;
         int index=hashvalue(temp_binary,n);
-        cout<<index<<endl;
         (*hist)[index]++;
     }
     
@@ -218,9 +232,6 @@ void create_indexing(int numofbuckets,int numofentries,Tuple *table,int* hist, i
                     tempPos = k;
                 }
             }
-            if(tempPos > 13){
-                cout << write_on_bucket << " " << i*divisor+tempVal << " " << tempPos << endl;
-            }
             if(write_on_bucket){
                 (*bucket)[i*divisor+tempVal] = tempPos;//bucket array needs offset
             }
@@ -228,20 +239,6 @@ void create_indexing(int numofbuckets,int numofentries,Tuple *table,int* hist, i
         }
         sum+=hist[i];
     }
-    for(int i=0; i<numofentries; i++){
-        cout << table[i].payload << "  ";
-    }
-    cout << endl;
-    cout << "Printing chain" << endl;
-    for(int i=0; i<numofentries; i++){
-        cout << (*chain)[i] << "  ";
-    }
-    cout << endl;
-    cout << "Printing bucket" << endl;
-    for(int i=0; i<numofbuckets*divisor; i++){
-        cout << (*bucket)[i] << "  ";
-    }
-    cout << endl;
 }
 
 void getResults(int n,Tuple *A,int A_numofentries, Tuple *B,int *chain, int *bucket){
@@ -252,21 +249,16 @@ void getResults(int n,Tuple *A,int A_numofentries, Tuple *B,int *chain, int *buc
     for(int i=0;i<A_numofentries;i++){
         h1 = hashvalue(dec_to_bin(A[i].payload),n);
         h2 = hashfun2(A[i].payload);
-        // cout << "h1 = " << h1 << " " << "h2 = " << h2 << endl;
         chainPos = bucket[h1*divisor+h2];
         if(chainPos == -1){
             continue;
         }
-        // cout << chainPos << endl;
-        // cout << "---------- " << A[i].key << " " << A[i].payload << endl;
         while(1){
-            // cout << "comparing: " << B[chainPos].payload << " == " << A[i].payload << endl;
             if(B[chainPos].payload == A[i].payload){
-                cout << A[i].key << "," << B[chainPos].key << endl;
                 output << A[i].key << "," << B[chainPos].key << endl;
                 l->add(A[i].key,B[chainPos].key);
+                noresults++;
             }
-            // cout << "chainPos = " << chainPos << endl;
             if(chain[chainPos] == -1){
                 break;
             }
@@ -275,6 +267,7 @@ void getResults(int n,Tuple *A,int A_numofentries, Tuple *B,int *chain, int *buc
     }
     // print list
     l->print();
+    delete l;
     output.close();
 }
 
@@ -322,6 +315,7 @@ int main(void){
     int n,A_numofentries,A_numofbuckets,B_numofentries,B_numofbuckets;
     Tuple *A,*A_Sorted,*B,*B_Sorted;
     int *A_hist,*A_psum,*B_hist,*B_psum,*A_chain,*A_bucket,*B_chain,*B_bucket;
+
     srand ( time(NULL) );
     create_csv();
     A_numofentries = getnumofentries((char*)"a.csv");
@@ -333,42 +327,19 @@ int main(void){
     cout<<B_numofentries<<endl; 
     init_and_get_values(&n,&B_numofentries,&B_numofbuckets,&B,&B_Sorted,&B_hist,&B_psum,(char*)"b.csv");
     sort_hashtable(n,B_numofentries,B_numofbuckets,B,&B_Sorted,&B_hist,&B_psum);
-    cout<<endl<<endl;
-    for(int i=0;i<A_numofentries;i++){
-        cout<<"A rowId = "<< A_Sorted[i].key << " payload = " << A_Sorted[i].payload << endl;
-    }
-    cout<<endl<<endl;
-    for(int i=0;i<B_numofentries;i++){
-        cout<<"B rowId = "<< B_Sorted[i].key << " payload = " << B_Sorted[i].payload << endl;
-    }
 
     // Create indexing to the array with the least amount of entries
     if(A_numofentries < B_numofentries){
         create_indexing(A_numofbuckets,A_numofentries,A_Sorted,A_hist,&A_chain,&A_bucket);
-        for(int i=0;i<A_numofentries;i++){
-            cout<<"A rowId = "<< A_Sorted[i].key << " payload = " << A_Sorted[i].payload << endl;
-        }
-        cout << "Printing hist" << endl;
-        for(int i=0;i<A_numofbuckets;i++){
-            cout << A_hist[i] << " ";
-        }
-        cout << endl;
         getResults(n,B_Sorted,B_numofentries,A_Sorted,A_chain,A_bucket);
+        free(A_chain);
+        free(A_bucket);
     }else{
         create_indexing(B_numofbuckets,B_numofentries,B_Sorted,B_hist,&B_chain,&B_bucket);
-        for(int i=0;i<B_numofentries;i++){
-            cout<<"B rowId = "<< B_Sorted[i].key << " payload = " << B_Sorted[i].payload << endl;
-        }
-        cout << "Printing hist" << endl;
-        for(int i=0;i<B_numofbuckets;i++){
-            cout << B_hist[i] << " ";
-        }
-        cout << endl;
         getResults(n,A_Sorted,A_numofentries,B_Sorted,B_chain,B_bucket);
+        free(B_chain);
+        free(B_bucket);
     }
-
-
-
 
     free_memory(&A,&A_Sorted,&A_hist,&A_psum);
     free_memory(&B,&B_Sorted,&B_hist,&B_psum);
