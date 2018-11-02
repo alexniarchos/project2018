@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <ctime>
+#include <cstring>
 
 using namespace std;
 
@@ -114,7 +115,7 @@ int hashvalue(int num,int divider)
     return dec_value; 
 }
 
-void init_and_get_values1(int* n,int* numofentries,int* numofbuckets,Tuple** a,Tuple** hash,int32_t** hist,int32_t** psum)
+void init_and_get_values(int* n,int* numofentries,int* numofbuckets,Tuple** a,Tuple** hash,int32_t** hist,int32_t** psum,char* filename)
 {   
     //get values and calculate sizes
     *n=3;
@@ -126,65 +127,23 @@ void init_and_get_values1(int* n,int* numofentries,int* numofbuckets,Tuple** a,T
     //init
     *a=(Tuple*)malloc((*numofentries)*sizeof(Tuple));
     *hash=(Tuple*)malloc((*numofentries)*sizeof(Tuple));
-
+    FILE* file=fopen(filename,"r");
+    char* line=NULL;
+    size_t falsebuffer=0;
     for (int i=0;i<(*numofentries);i++){
-        (*a)[i].key=i;
-        // (*a)[i].payload=rand()%1024;
+        getline(&line,&falsebuffer,file);
+        char* token=strtok(line,",");
+        (*a)[i].key=atoi(token);
+        token=strtok(NULL,"\n");
+        (*a)[i].payload=atoi(token);
+        free(line);
+        line=NULL;
+        falsebuffer=0;
         (*hash)[i].key=-1;
     }
+    free(line);
+    fclose(file);
 
-    (*a)[0].payload = 0;
-    (*a)[1].payload = 1;
-    (*a)[2].payload = 8;
-    (*a)[3].payload = 16;
-    (*a)[4].payload = 2;
-    (*a)[5].payload = 3;
-    (*a)[6].payload = 4;
-    (*a)[7].payload = 24;
-    (*a)[8].payload = 5;
-    (*a)[9].payload = 6;
-
-
-    *hist=(int32_t*)malloc((*numofbuckets)*sizeof(int32_t));
-    for(int i=0;i<(*numofbuckets);i++)
-        (*hist)[i]=0;
-    *psum=(int32_t*)malloc((*numofbuckets)*sizeof(int));
-}
-
-void init_and_get_values2(int* n,int* numofentries,int* numofbuckets,Tuple** a,Tuple** hash,int32_t** hist,int32_t** psum)
-{   
-    //get values and calculate sizes
-    *n=3;
-    // *numofentries=10;
-    *numofbuckets=1;
-    for(int i=0;i<*n;i++){
-        *numofbuckets*=2;
-    }
-    //init
-    *a=(Tuple*)malloc((*numofentries)*sizeof(Tuple));
-    *hash=(Tuple*)malloc((*numofentries)*sizeof(Tuple));
-
-    for (int i=0;i<(*numofentries);i++){
-        (*a)[i].key=i;
-        // (*a)[i].payload=rand()%1024;
-        (*hash)[i].key=-1;
-    }
-
-    (*a)[0].payload = 0;
-    (*a)[1].payload = 1;
-    (*a)[2].payload = 8;
-    (*a)[3].payload = 16;
-    (*a)[4].payload = 2;
-    (*a)[5].payload = 3;
-    (*a)[6].payload = 4;
-    (*a)[7].payload = 24;
-    (*a)[8].payload = 5;
-    (*a)[9].payload = 6;
-    (*a)[10].payload = 7;
-    (*a)[11].payload = 8;
-    (*a)[12].payload = 9;
-    (*a)[13].payload = 6;
-    (*a)[14].payload = 11;
 
     *hist=(int32_t*)malloc((*numofbuckets)*sizeof(int32_t));
     for(int i=0;i<(*numofbuckets);i++)
@@ -306,19 +265,53 @@ void free_memory(Tuple** a,Tuple** hash,int32_t** hist,int32_t** psum)
     free(*hist);
     free(*psum);
 }
-
+void create_csv()
+{
+    remove("a.csv");
+    remove("b.csv");
+    FILE* a=fopen("a.csv","w");
+    FILE* b=fopen("b.csv","w");
+    srand(time(NULL));
+    int A_numofentries=rand()%10 + 5;
+    int B_numofentries=rand()%10 + 5;
+    for(int i=0;i<A_numofentries;i++)
+        fprintf(a,"%d,%d\n",i,rand()%100);
+    for(int i=0;i<B_numofentries;i++)
+        fprintf(b,"%d,%d\n",i,rand()%100);
+    fclose(a);
+    fclose(b);
+}
+int getnumofentries(char* file_name)
+{
+    FILE* file=fopen(file_name,"r");
+    char *line=NULL;
+    size_t falsebuffer=0;
+    int counter=0;
+    while(-1!=getline(&line,&falsebuffer,file))
+    {
+        counter++;
+        free(line);
+        line=NULL;
+        falsebuffer=0;
+    }
+    fclose(file);
+    free(line);
+    return counter;
+}
 int main(void){
     int n,A_numofentries,A_numofbuckets,B_numofentries,B_numofbuckets;
     Tuple *A,*A_Sorted,*B,*B_Sorted;
     int32_t *A_hist,*A_psum,*B_hist,*B_psum,*A_chain,*A_bucket,*B_chain,*B_bucket;
     srand ( time(NULL) );
-
-    A_numofentries = 10;
-    init_and_get_values1(&n,&A_numofentries,&A_numofbuckets,&A,&A_Sorted,&A_hist,&A_psum);
+    create_csv();
+    A_numofentries = getnumofentries((char*)"a.csv");
+    cout<<A_numofentries<<endl;
+    init_and_get_values(&n,&A_numofentries,&A_numofbuckets,&A,&A_Sorted,&A_hist,&A_psum,(char*)"a.csv");
     sort_hashtable(n,A_numofentries,A_numofbuckets,A,&A_Sorted,&A_hist,&A_psum);
 
-    B_numofentries = 15;
-    init_and_get_values2(&n,&B_numofentries,&B_numofbuckets,&B,&B_Sorted,&B_hist,&B_psum);
+    B_numofentries = getnumofentries((char*)"b.csv");
+    cout<<B_numofentries<<endl; 
+    init_and_get_values(&n,&B_numofentries,&B_numofbuckets,&B,&B_Sorted,&B_hist,&B_psum,(char*)"b.csv");
     sort_hashtable(n,B_numofentries,B_numofbuckets,B,&B_Sorted,&B_hist,&B_psum);
     cout<<endl<<endl;
     for(int i=0;i<A_numofentries;i++){
