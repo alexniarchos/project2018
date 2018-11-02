@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <ctime>
 #include <cstring>
+#include <stdio.h>
+#include <fstream>
 
 using namespace std;
 
@@ -9,13 +11,13 @@ using namespace std;
 #define bufsize 40 //size of bytes for each listnode tuple array
 
 struct Tuple {
-    int32_t key;
-    int32_t payload;
+    int key;
+    int payload;
 };
 
 struct result {
-    int32_t rowId1;
-    int32_t rowId2;
+    int rowId1;
+    int rowId2;
 };
 
 class listnode{
@@ -85,7 +87,7 @@ class list{
     }
 };
 
-int32_t dec_to_bin(int32_t decimal) {
+int dec_to_bin(int decimal) {
     if (decimal == 0) 
         return 0;
     if (decimal == 1) 
@@ -115,7 +117,7 @@ int hashvalue(int num,int divider)
     return dec_value; 
 }
 
-void init_and_get_values(int* n,int* numofentries,int* numofbuckets,Tuple** a,Tuple** hash,int32_t** hist,int32_t** psum,char* filename)
+void init_and_get_values(int* n,int* numofentries,int* numofbuckets,Tuple** a,Tuple** hash,int** hist,int** psum,char* filename)
 {   
     //get values and calculate sizes
     *n=3;
@@ -145,13 +147,13 @@ void init_and_get_values(int* n,int* numofentries,int* numofbuckets,Tuple** a,Tu
     fclose(file);
 
 
-    *hist=(int32_t*)malloc((*numofbuckets)*sizeof(int32_t));
+    *hist=(int*)malloc((*numofbuckets)*sizeof(int));
     for(int i=0;i<(*numofbuckets);i++)
         (*hist)[i]=0;
-    *psum=(int32_t*)malloc((*numofbuckets)*sizeof(int));
+    *psum=(int*)malloc((*numofbuckets)*sizeof(int));
 }
 
-void sort_hashtable(int n,int numofentries,int numofbuckets,Tuple* a,Tuple** hash,int32_t** hist,int32_t** psum){
+void sort_hashtable(int n,int numofentries,int numofbuckets,Tuple* a,Tuple** hash,int** hist,int** psum){
     for(int i=0;i<numofentries;i++){
         int temp_binary=dec_to_bin(a[i].payload);
         cout<<"rowId = "<< a[i].key << " payload = " << a[i].payload << endl;
@@ -187,19 +189,23 @@ int hashfun2(int value){
     return value % divisor;
 }
 
-void create_indexing(int numofbuckets,int numofentries,Tuple *table,int32_t* hist, int32_t** chain, int32_t** bucket){
+void create_indexing(int numofbuckets,int numofentries,Tuple *table,int* hist, int** chain, int** bucket){
     // allocate chain and bucket
-    *chain = (int32_t*)malloc(numofentries*sizeof(int32_t));
+    *chain = (int*)malloc(numofentries*sizeof(int));
     for(int i=0;i<numofentries;i++){
         (*chain)[i]=-1;
     }
-    *bucket = (int32_t*)malloc(numofbuckets*divisor*sizeof(int32_t));
+    *bucket = (int*)malloc(numofbuckets*divisor*sizeof(int));
+    for(int i=0;i<numofbuckets*divisor;i++){
+        (*bucket)[i]=-1;
+    }
 
     // fill chain and bucket with indexes
     int sum=0,tempPos,tempVal;
     bool write_on_bucket=true;
     for(int i=0; i<numofbuckets; i++){
         for(int j=sum; j<sum+hist[i]; j++){
+            write_on_bucket=true;
             tempPos = j;
             tempVal = hashfun2(table[j].payload);
             for(int k=j+1;k<sum+hist[i];k++){
@@ -212,6 +218,9 @@ void create_indexing(int numofbuckets,int numofentries,Tuple *table,int32_t* his
                     tempPos = k;
                 }
             }
+            if(tempPos > 13){
+                cout << write_on_bucket << " " << i*divisor+tempVal << " " << tempPos << endl;
+            }
             if(write_on_bucket){
                 (*bucket)[i*divisor+tempVal] = tempPos;//bucket array needs offset
             }
@@ -219,6 +228,10 @@ void create_indexing(int numofbuckets,int numofentries,Tuple *table,int32_t* his
         }
         sum+=hist[i];
     }
+    for(int i=0; i<numofentries; i++){
+        cout << table[i].payload << "  ";
+    }
+    cout << endl;
     cout << "Printing chain" << endl;
     for(int i=0; i<numofentries; i++){
         cout << (*chain)[i] << "  ";
@@ -231,20 +244,26 @@ void create_indexing(int numofbuckets,int numofentries,Tuple *table,int32_t* his
     cout << endl;
 }
 
-void getResults(int n,Tuple *A,int A_numofentries, Tuple *B,int32_t *chain, int32_t *bucket){
+void getResults(int n,Tuple *A,int A_numofentries, Tuple *B,int *chain, int *bucket){
     int h1,h2,chainVal,chainPos;
+    ofstream output;
+    output.open("output.csv");
     list *l = new list();
     for(int i=0;i<A_numofentries;i++){
         h1 = hashvalue(dec_to_bin(A[i].payload),n);
         h2 = hashfun2(A[i].payload);
         // cout << "h1 = " << h1 << " " << "h2 = " << h2 << endl;
         chainPos = bucket[h1*divisor+h2];
+        if(chainPos == -1){
+            continue;
+        }
         // cout << chainPos << endl;
         // cout << "---------- " << A[i].key << " " << A[i].payload << endl;
         while(1){
             // cout << "comparing: " << B[chainPos].payload << " == " << A[i].payload << endl;
             if(B[chainPos].payload == A[i].payload){
                 cout << A[i].key << "," << B[chainPos].key << endl;
+                output << A[i].key << "," << B[chainPos].key << endl;
                 l->add(A[i].key,B[chainPos].key);
             }
             // cout << "chainPos = " << chainPos << endl;
@@ -256,9 +275,10 @@ void getResults(int n,Tuple *A,int A_numofentries, Tuple *B,int32_t *chain, int3
     }
     // print list
     l->print();
+    output.close();
 }
 
-void free_memory(Tuple** a,Tuple** hash,int32_t** hist,int32_t** psum)
+void free_memory(Tuple** a,Tuple** hash,int** hist,int** psum)
 {
     free(*a);
     free(*hash);
@@ -272,12 +292,12 @@ void create_csv()
     FILE* a=fopen("a.csv","w");
     FILE* b=fopen("b.csv","w");
     srand(time(NULL));
-    int A_numofentries=rand()%10 + 5;
-    int B_numofentries=rand()%10 + 5;
+    int A_numofentries=rand()%1000 + 5;
+    int B_numofentries=rand()%1000 + 5;
     for(int i=0;i<A_numofentries;i++)
         fprintf(a,"%d,%d\n",i,rand()%100);
     for(int i=0;i<B_numofentries;i++)
-        fprintf(b,"%d,%d\n",i,rand()%100);
+        fprintf(b,"%d,%d\n",i,rand()%50);
     fclose(a);
     fclose(b);
 }
@@ -301,7 +321,7 @@ int getnumofentries(char* file_name)
 int main(void){
     int n,A_numofentries,A_numofbuckets,B_numofentries,B_numofbuckets;
     Tuple *A,*A_Sorted,*B,*B_Sorted;
-    int32_t *A_hist,*A_psum,*B_hist,*B_psum,*A_chain,*A_bucket,*B_chain,*B_bucket;
+    int *A_hist,*A_psum,*B_hist,*B_psum,*A_chain,*A_bucket,*B_chain,*B_bucket;
     srand ( time(NULL) );
     create_csv();
     A_numofentries = getnumofentries((char*)"a.csv");
@@ -334,6 +354,17 @@ int main(void){
         }
         cout << endl;
         getResults(n,B_Sorted,B_numofentries,A_Sorted,A_chain,A_bucket);
+    }else{
+        create_indexing(B_numofbuckets,B_numofentries,B_Sorted,B_hist,&B_chain,&B_bucket);
+        for(int i=0;i<B_numofentries;i++){
+            cout<<"B rowId = "<< B_Sorted[i].key << " payload = " << B_Sorted[i].payload << endl;
+        }
+        cout << "Printing hist" << endl;
+        for(int i=0;i<B_numofbuckets;i++){
+            cout << B_hist[i] << " ";
+        }
+        cout << endl;
+        getResults(n,A_Sorted,A_numofentries,B_Sorted,B_chain,B_bucket);
     }
 
 
