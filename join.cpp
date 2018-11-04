@@ -10,8 +10,6 @@ using namespace std;
 #define divisor 13 //hash function 2 mod value
 #define bufsize 40 //size of bytes for each listnode tuple array
 
-int noresults;
-
 struct Tuple {
     int key;
     int payload;
@@ -83,8 +81,8 @@ class list{
         while(temp!=NULL){
             sum+=bufsize/sizeof(result);
             limit = bufsize/sizeof(result);
-            if(sum > noresults){
-                limit = noresults % (bufsize/sizeof(result));
+            if(sum > tupleCount){
+                limit = tupleCount % (bufsize/sizeof(result));
             }
             for(int i=0;i<limit;i++){
                 cout << temp->tuples[i].rowId1 << " , " << temp->tuples[i].rowId2 << endl;
@@ -257,7 +255,6 @@ void getResults(int n,Tuple *A,int A_numofentries, Tuple *B,int *chain, int *buc
             if(B[chainPos].payload == A[i].payload){
                 output << A[i].key << "," << B[chainPos].key << endl;
                 l->add(A[i].key,B[chainPos].key);
-                noresults++;
             }
             if(chain[chainPos] == -1){
                 break;
@@ -318,13 +315,14 @@ int main(void){
 
     srand ( time(NULL) );
     create_csv();
+
     A_numofentries = getnumofentries((char*)"a.csv");
-    cout<<A_numofentries<<endl;
+    cout<<"Size of A: "<<A_numofentries<<endl;
     init_and_get_values(&n,&A_numofentries,&A_numofbuckets,&A,&A_Sorted,&A_hist,&A_psum,(char*)"a.csv");
     sort_hashtable(n,A_numofentries,A_numofbuckets,A,&A_Sorted,&A_hist,&A_psum);
 
     B_numofentries = getnumofentries((char*)"b.csv");
-    cout<<B_numofentries<<endl; 
+    cout<<"Size of B: "<<B_numofentries<<endl; 
     init_and_get_values(&n,&B_numofentries,&B_numofbuckets,&B,&B_Sorted,&B_hist,&B_psum,(char*)"b.csv");
     sort_hashtable(n,B_numofentries,B_numofbuckets,B,&B_Sorted,&B_hist,&B_psum);
 
