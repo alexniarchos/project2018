@@ -7,8 +7,12 @@
 
 using namespace std;
 
+#define n_last_digits 3 //number of last digits for hash function 1
 #define divisor 13 //hash function 2 mod value
 #define bufsize 40 //size of bytes for each listnode tuple array
+
+// globals
+int numofbuckets;
 
 struct Tuple {
     int key;
@@ -18,6 +22,11 @@ struct Tuple {
 struct result {
     int rowId1;
     int rowId2;
+};
+
+struct relation{
+    Tuple *tuples;
+    int numofentries;
 };
 
 class listnode{
@@ -71,7 +80,7 @@ class list{
         }
 
         temp->add(tupleCount,num1,num2);
-        tupleCount+=1;
+        tupleCount++;
     }
 
     void print(){
@@ -133,45 +142,51 @@ int hashvalue(int num,int divider)
     return dec_value; 
 }
 
-void init_and_get_values(int* n,int* numofentries,int* numofbuckets,Tuple** a,Tuple** hash,int** hist,int** psum,char* filename)
-{   
-    //get values and calculate sizes
-    *n=3;
-    *numofbuckets=1;
-    for(int i=0;i<*n;i++){
-        *numofbuckets*=2;
-    }
-    //init
-    *a=(Tuple*)malloc((*numofentries)*sizeof(Tuple));
-    *hash=(Tuple*)malloc((*numofentries)*sizeof(Tuple));
-    FILE* file=fopen(filename,"r");
-    char* line=NULL;
+int getnumofentries(char* file_name)
+{
+    FILE* file=fopen(file_name,"r");
+    char *line=NULL;
     size_t falsebuffer=0;
-    for (int i=0;i<(*numofentries);i++){
-        getline(&line,&falsebuffer,file);
-        char* token=strtok(line,",");
-        (*a)[i].key=atoi(token);
-        token=strtok(NULL,"\n");
-        (*a)[i].payload=atoi(token);
+    int counter=0;
+    while(-1!=getline(&line,&falsebuffer,file))
+    {
+        counter++;
         free(line);
         line=NULL;
         falsebuffer=0;
-        (*hash)[i].key=-1;
+    }
+    fclose(file);
+    free(line);
+    return counter;
+}
+
+void init_and_get_values(relation* rel,char* filename)
+{
+    rel->numofentries = getnumofentries((char*)filename);
+    cout<<"Size of rel: "<< rel->numofentries << endl;
+    rel->tuples=(Tuple*)malloc(rel->numofentries*sizeof(Tuple));
+
+    FILE* file=fopen(filename,"r");
+    char* line=NULL;
+    size_t falsebuffer=0;
+    for (int i=0;i<rel->numofentries;i++){
+        getline(&line,&falsebuffer,file);
+        char* token=strtok(line,",");
+        rel->tuples[i].key=atoi(token);
+        token=strtok(NULL,"\n");
+        rel->tuples[i].payload=atoi(token);
+        free(line);
+        line=NULL;
+        falsebuffer=0;
     }
     free(line);
     fclose(file);
-
-
-    *hist=(int*)malloc((*numofbuckets)*sizeof(int));
-    for(int i=0;i<(*numofbuckets);i++)
-        (*hist)[i]=0;
-    *psum=(int*)malloc((*numofbuckets)*sizeof(int));
 }
 
-void sort_hashtable(int n,int numofentries,int numofbuckets,Tuple* a,Tuple** hash,int** hist,int** psum){
-    for(int i=0;i<numofentries;i++){
-        int temp_binary=dec_to_bin(a[i].payload);
-        int index=hashvalue(temp_binary,n);
+void sort_hashtable(relation *rel,Tuple** hash,int** hist,int** psum){
+    for(int i=0;i<rel->numofentries;i++){
+        int temp_binary=dec_to_bin(rel->tuples[i].payload);
+        int index=hashvalue(temp_binary,n_last_digits);
         (*hist)[index]++;
     }
     
@@ -182,14 +197,14 @@ void sort_hashtable(int n,int numofentries,int numofbuckets,Tuple* a,Tuple** has
             (*psum)[i]=(*psum)[i-1]+(*hist)[i-1];
     }
 
-    for(int i=0;i<numofentries;i++){
-        int temp_binary=dec_to_bin(a[i].payload);
-        int index=hashvalue(temp_binary,n);
+    for(int i=0;i<rel->numofentries;i++){
+        int temp_binary=dec_to_bin(rel->tuples[i].payload);
+        int index=hashvalue(temp_binary,n_last_digits);
         int j=0;
         while(1){
             if((*hash)[(*psum)[index]+j].key==-1){    
-                (*hash)[(*psum)[index]+j].key=a[i].key;
-                (*hash)[(*psum)[index]+j].payload=a[i].payload;
+                (*hash)[(*psum)[index]+j].key=rel->tuples[i].key;
+                (*hash)[(*psum)[index]+j].payload=rel->tuples[i].payload;
                 break;
             }
             j++;
@@ -201,7 +216,7 @@ int hashfun2(int value){
     return value % divisor;
 }
 
-void create_indexing(int numofbuckets,int numofentries,Tuple *table,int* hist, int** chain, int** bucket){
+void create_indexing(int numofentries,Tuple *table,int* hist, int** chain, int** bucket){
     // allocate chain and bucket
     *chain = (int*)malloc(numofentries*sizeof(int));
     for(int i=0;i<numofentries;i++){
@@ -239,22 +254,22 @@ void create_indexing(int numofbuckets,int numofentries,Tuple *table,int* hist, i
     }
 }
 
-void getResults(int n,Tuple *A,int A_numofentries, Tuple *B,int *chain, int *bucket){
+list* getResults(relation *relA, Tuple *B,int *chain, int *bucket){
     int h1,h2,chainVal,chainPos;
     ofstream output;
     output.open("output.csv");
     list *l = new list();
-    for(int i=0;i<A_numofentries;i++){
-        h1 = hashvalue(dec_to_bin(A[i].payload),n);
-        h2 = hashfun2(A[i].payload);
+    for(int i=0;i<relA->numofentries;i++){
+        h1 = hashvalue(dec_to_bin(relA->tuples[i].payload),n_last_digits);
+        h2 = hashfun2(relA->tuples[i].payload);
         chainPos = bucket[h1*divisor+h2];
         if(chainPos == -1){
             continue;
         }
         while(1){
-            if(B[chainPos].payload == A[i].payload){
-                output << A[i].key << "," << B[chainPos].key << endl;
-                l->add(A[i].key,B[chainPos].key);
+            if(B[chainPos].payload == relA->tuples[i].payload){
+                output << relA->tuples[i].key << "," << B[chainPos].key << endl;
+                l->add(relA->tuples[i].key,B[chainPos].key);
             }
             if(chain[chainPos] == -1){
                 break;
@@ -262,10 +277,8 @@ void getResults(int n,Tuple *A,int A_numofentries, Tuple *B,int *chain, int *buc
             chainPos = chain[chainPos];
         }
     }
-    // print list
-    l->print();
-    delete l;
     output.close();
+    return l;
 }
 
 void free_memory(Tuple** a,Tuple** hash,int** hist,int** psum)
@@ -291,54 +304,77 @@ void create_csv()
     fclose(a);
     fclose(b);
 }
-int getnumofentries(char* file_name)
-{
-    FILE* file=fopen(file_name,"r");
-    char *line=NULL;
-    size_t falsebuffer=0;
-    int counter=0;
-    while(-1!=getline(&line,&falsebuffer,file))
-    {
-        counter++;
-        free(line);
-        line=NULL;
-        falsebuffer=0;
-    }
-    fclose(file);
-    free(line);
-    return counter;
-}
-int main(void){
-    int n,A_numofentries,A_numofbuckets,B_numofentries,B_numofbuckets;
-    Tuple *A,*A_Sorted,*B,*B_Sorted;
+
+list* RadixHashJoin(relation *relA, relation *relB){
+    Tuple *A_Sorted,*B_Sorted;
     int *A_hist,*A_psum,*B_hist,*B_psum,*A_chain,*A_bucket,*B_chain,*B_bucket;
+    list *l;
+    
+    // init arrays and sort
+    A_Sorted = (Tuple*)malloc(relA->numofentries*sizeof(Tuple));
+    for (int i=0;i<relA->numofentries;i++){
+        A_Sorted[i].key = -1;
+    }
+    A_hist=(int*)malloc(numofbuckets*sizeof(int));
+    for(int i=0;i<numofbuckets;i++)
+        A_hist[i]=0;
+    A_psum=(int*)malloc(numofbuckets*sizeof(int));
 
-    srand ( time(NULL) );
-    create_csv();
+    sort_hashtable(relA,&A_Sorted,&A_hist,&A_psum);
 
-    A_numofentries = getnumofentries((char*)"a.csv");
-    cout<<"Size of A: "<<A_numofentries<<endl;
-    init_and_get_values(&n,&A_numofentries,&A_numofbuckets,&A,&A_Sorted,&A_hist,&A_psum,(char*)"a.csv");
-    sort_hashtable(n,A_numofentries,A_numofbuckets,A,&A_Sorted,&A_hist,&A_psum);
+    B_Sorted = (Tuple*)malloc(relB->numofentries*sizeof(Tuple));
+    for (int i=0;i<relB->numofentries;i++){
+        B_Sorted[i].key = -1;
+    }
+    B_hist=(int*)malloc(numofbuckets*sizeof(int));
+    for(int i=0;i<numofbuckets;i++)
+        B_hist[i]=0;
+    B_psum=(int*)malloc(numofbuckets*sizeof(int));
 
-    B_numofentries = getnumofentries((char*)"b.csv");
-    cout<<"Size of B: "<<B_numofentries<<endl; 
-    init_and_get_values(&n,&B_numofentries,&B_numofbuckets,&B,&B_Sorted,&B_hist,&B_psum,(char*)"b.csv");
-    sort_hashtable(n,B_numofentries,B_numofbuckets,B,&B_Sorted,&B_hist,&B_psum);
+    sort_hashtable(relB,&B_Sorted,&B_hist,&B_psum);
 
     // Create indexing to the array with the least amount of entries
-    if(A_numofentries < B_numofentries){
-        create_indexing(A_numofbuckets,A_numofentries,A_Sorted,A_hist,&A_chain,&A_bucket);
-        getResults(n,B_Sorted,B_numofentries,A_Sorted,A_chain,A_bucket);
+    if(relA->numofentries < relB->numofentries){
+        create_indexing(relA->numofentries,A_Sorted,A_hist,&A_chain,&A_bucket);
+        l = getResults(relB,A_Sorted,A_chain,A_bucket);
         free(A_chain);
         free(A_bucket);
     }else{
-        create_indexing(B_numofbuckets,B_numofentries,B_Sorted,B_hist,&B_chain,&B_bucket);
-        getResults(n,A_Sorted,A_numofentries,B_Sorted,B_chain,B_bucket);
+        create_indexing(relB->numofentries,B_Sorted,B_hist,&B_chain,&B_bucket);
+        l = getResults(relA,B_Sorted,B_chain,B_bucket);
         free(B_chain);
         free(B_bucket);
     }
 
-    free_memory(&A,&A_Sorted,&A_hist,&A_psum);
-    free_memory(&B,&B_Sorted,&B_hist,&B_psum);
+    free_memory(&relA->tuples,&A_Sorted,&A_hist,&A_psum);
+    free_memory(&relB->tuples,&B_Sorted,&B_hist,&B_psum);
+    return l;
+}
+
+int main(void){
+    relation *relA,*relB;
+    relA = (relation*)malloc(sizeof(relation));
+    relB = (relation*)malloc(sizeof(relation));
+
+    list *result;
+
+    srand ( time(NULL) );
+    // create input files
+    create_csv();
+
+    numofbuckets=1;
+    for(int i=0;i<n_last_digits;i++){
+        numofbuckets*=2;
+    }
+
+    // load file into relation
+    init_and_get_values(relA,(char*)"a.csv");
+    init_and_get_values(relB,(char*)"b.csv");
+
+    result = RadixHashJoin(relA,relB);
+    free(relA);
+    free(relB);
+    // print list
+    result->print();
+    delete result;
 }
