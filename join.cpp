@@ -261,27 +261,20 @@ void create_indexing(int numofentries,Tuple *table,int* hist, int** chain, int**
     }
 
     // fill chain and bucket with indexes
-    int sum=0,tempPos,tempVal;
-    bool write_on_bucket=true;
+    int sum=0,h2val=0,curChainPos=0;
     for(int i=0; i<numofbuckets; i++){
         for(int j=sum; j<sum+hist[i]; j++){
-            write_on_bucket=true;
-            tempPos = j;
-            tempVal = hashfun2(table[j].payload);
-            for(int k=j+1;k<sum+hist[i];k++){
-                if(tempVal == hashfun2(table[k].payload) && (*chain)[k] != -1){//already found same hash function 2 values
-                    write_on_bucket = false;
-                    break;
-                }
-                if(tempVal == hashfun2(table[k].payload)){
-                    (*chain)[k] = tempPos;
-                    tempPos = k;
-                }
+            h2val = hashfun2(table[j].payload);
+            // empty bucket position
+            if((*bucket)[i*divisor+h2val] == -1){
+                (*bucket)[i*divisor+h2val] = j;
             }
-            if(write_on_bucket){
-                (*bucket)[i*divisor+tempVal] = tempPos;//bucket array needs offset
+            // bucket already pointing to chain position
+            else{
+                curChainPos = (*bucket)[i*divisor+h2val];
+                (*chain)[j] = curChainPos;
+                (*bucket)[i*divisor+h2val] = j;
             }
-            
         }
         sum+=hist[i];
     }
@@ -314,9 +307,8 @@ list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket){
     return l;
 }
 
-void free_memory(Tuple** a,Tuple** hash,int** hist,int** psum)
+void free_memory(Tuple** hash,int** hist,int** psum)
 {
-    free(*a);
     free(*hash);
     free(*hist);
     free(*psum);
@@ -363,8 +355,8 @@ list* RadixHashJoin(relation *relA,int numofcolA, relation *relB,int numofcolB){
         free(B_bucket);
     }
 
-    // free_memory(&relA->tuples,&A_Sorted,&A_hist,&A_psum);
-    // free_memory(&relB->tuples,&B_Sorted,&B_hist,&B_psum);
+    free_memory(&A_Sorted,&A_hist,&A_psum);
+    free_memory(&B_Sorted,&B_hist,&B_psum);
     return l;
 }
 
@@ -381,6 +373,16 @@ int main(void){
 
     // load file into relation
     rels = init_relations(&numofrels);
+    // write relations to file for testing
+    ofstream r0,r1;
+    r0.open("r0.csv");
+    r1.open("r1.csv");
+    for(int i=0;i<rels[0]->numofentries;i++){
+        r0 << i << "," << rels[0]->cols[0][i] << endl;
+    }
+    for(int i=0;i<rels[1]->numofentries;i++){
+        r1 << i << "," << rels[1]->cols[0][i] << endl;
+    }
     cout << "-----------------------------------------------" << endl;
     for(int i=0;i<numofrels;i++){
         for (int j=0;j<rels[i]->numofcols;j++) {
@@ -392,5 +394,6 @@ int main(void){
     result = RadixHashJoin(rels[0],0,rels[1],0);
     // print list
     result->print();
+
     // delete result;
 }
