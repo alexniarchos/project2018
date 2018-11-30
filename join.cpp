@@ -35,6 +35,13 @@ struct relation{
     int numofentries;
 };
 
+class midResult{
+    public:
+        vector<int*> cols;
+        int colSize;
+        vector<int> relId;
+};
+
 class listnode{
     public:
 
