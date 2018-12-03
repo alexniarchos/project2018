@@ -64,7 +64,8 @@ class SQLquery{
                 predicates.push_back(entry);
             }
             else{
-                int entry[5]={relations[r1],c1,symbol,relations[r2],c2};
+                int entry[5]={r1,c1,symbol,r2,c2};
+                cout<<entry[0]<<" "<<entry[1]<<" "<<entry[2]<<" "<<entry[3]<<" "<<entry[4]<<" "<<endl;
                 predicates.push_back(entry);
             }
             free(csymbol);
@@ -79,7 +80,7 @@ class SQLquery{
             sscanf(temp,"%d",&r);
             temp=strtok_r(nextentry," \n",&nextentry);
             sscanf(temp,"%d",&c);
-            int entry[2]={relations[r],c};
+            int entry[2]={r,c};
             cout<<entry[0]<<" "<<entry[1]<<endl;
             views.push_back(entry);
 
