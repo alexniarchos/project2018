@@ -1,129 +1,67 @@
-#include <iostream>
-#include <stdlib.h>
-#include <ctime>
-#include <cstring>
-#include <stdio.h>
-#include <fstream>
-#include <vector>
-#include <stdint.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include "join.h"
 
 using namespace std;
 
-#define n_last_digits 3 //number of last digits for hash function 1
-#define divisor 13 //hash function 2 mod value
-#define bufsize 40 //size of bytes for each listnode tuple array
+listnode::listnode(){
+    next = NULL;
+    tuples = (result*)malloc(bufsize);
+    memset(tuples,0,bufsize);
+}
 
-// globals
-int numofbuckets;
+void listnode::add(int tupleCount,int num1,int num2){
+    int index = tupleCount % (bufsize/sizeof(result));
+    tuples[index].rowId1 = num1;
+    tuples[index].rowId2 = num2;
+}
 
-struct Tuple {
-    int key;
-    uint64_t payload;
-};
-
-struct result {
-    int rowId1;
-    int rowId2;
-};
-
-struct relation{
-    uint64_t **cols;
-    int numofcols;
-    int numofentries;
-};
-
-class midResult{
-    public:
-        vector<int*> cols;
-        int colSize;
-        vector<int> relId;
-};
-
-class listnode{
-    public:
-
-    listnode *next;
-    result *tuples;
-
-    listnode(){
-        next = NULL;
-        tuples = (result*)malloc(bufsize);
-        memset(tuples,0,bufsize);
+void list::add(int num1,int num2){
+    listnode *temp;
+    if(head==NULL){//first add to list
+        head = new listnode();
+        temp=head;
     }
-
-    void add(int tupleCount,int num1,int num2){
-        int index = tupleCount % (bufsize/sizeof(result));
-        tuples[index].rowId1 = num1;
-        tuples[index].rowId2 = num2;
-    }
-
-    ~listnode(){
-        free(tuples);
-    }
-};
-
-class list{
-    public:
-
-    int tupleCount;
-    listnode *head=NULL;
-
-    list(){
-        tupleCount = 0;
-    }
-
-    void add(int num1,int num2){
-        listnode *temp;
-        if(head==NULL){//first add to list
-            head = new listnode();
-            temp=head;
-        }
-        else{
-            temp=head;
-            while(temp->next!=NULL){//get to the tail of the list
-                temp = temp->next;
-            }
-            if(tupleCount % (bufsize/sizeof(result)) == 0){//buffer is full create new one
-                temp->next = new listnode();
-                temp = temp->next;
-            }
-        }
-
-        temp->add(tupleCount,num1,num2);
-        tupleCount++;
-    }
-
-    void print(){
-        cout << "Printing result list..." << endl;
-        int sum=0,limit;
-        listnode *temp = head;
-        while(temp!=NULL){
-            sum+=bufsize/sizeof(result);
-            limit = bufsize/sizeof(result);
-            if(sum > tupleCount){
-                limit = tupleCount % (bufsize/sizeof(result));
-            }
-            for(int i=0;i<limit;i++){
-                cout << temp->tuples[i].rowId1 << " , " << temp->tuples[i].rowId2 << endl;
-            }
+    else{
+        temp=head;
+        while(temp->next!=NULL){//get to the tail of the list
             temp = temp->next;
-            cout << "---end of buffer---" << endl;
+        }
+        if(tupleCount % (bufsize/sizeof(result)) == 0){//buffer is full create new one
+            temp->next = new listnode();
+            temp = temp->next;
         }
     }
 
-    ~list(){
-        // free listnodes
-        listnode *temp = head,*next;
-        while(temp!=NULL){
-            next = temp->next;
-            delete temp;
-            temp = next;
+    temp->add(tupleCount,num1,num2);
+    tupleCount++;
+}
+
+void list::print(){
+    cout << "Printing result list..." << endl;
+    int sum=0,limit;
+    listnode *temp = head;
+    while(temp!=NULL){
+        sum+=bufsize/sizeof(result);
+        limit = bufsize/sizeof(result);
+        if(sum > tupleCount){
+            limit = tupleCount % (bufsize/sizeof(result));
         }
+        for(int i=0;i<limit;i++){
+            cout << temp->tuples[i].rowId1 << " , " << temp->tuples[i].rowId2 << endl;
+        }
+        temp = temp->next;
+        cout << "---end of buffer---" << endl;
     }
-};
+}
+
+list::~list(){
+    // free listnodes
+    listnode *temp = head,*next;
+    while(temp!=NULL){
+        next = temp->next;
+        delete temp;
+        temp = next;
+    }
+}
 
 uint64_t dec_to_bin(uint64_t decimal) {
     if (decimal == 0) 
@@ -132,6 +70,7 @@ uint64_t dec_to_bin(uint64_t decimal) {
         return 1;                  
     return (decimal % 2) + 10 * dec_to_bin(decimal / 2);
 }
+
 int hashvalue(uint64_t num,int divider) 
 { 
     int mod=1;
