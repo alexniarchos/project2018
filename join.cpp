@@ -1,7 +1,7 @@
 #include "join.h"
 
 using namespace std;
-
+int numofbuckets;
 listnode::listnode(){
     next = NULL;
     tuples = (result*)malloc(bufsize);
@@ -304,42 +304,4 @@ list* RadixHashJoin(relation *relA,int numofcolA, relation *relB,int numofcolB){
     free_memory(&A_Sorted,&A_hist,&A_psum);
     free_memory(&B_Sorted,&B_hist,&B_psum);
     return l;
-}
-
-int main(void){
-    relation **rels = NULL;
-    int numofrels;
-
-    list *result;
-
-    numofbuckets=1;
-    for(int i=0;i<n_last_digits;i++){
-        numofbuckets*=2;
-    }
-
-    // load file into relation
-    rels = init_relations(&numofrels);
-    // write relations to file for testing
-    ofstream r0,r1;
-    r0.open("r0.csv");
-    r1.open("r1.csv");
-    for(int i=0;i<rels[0]->numofentries;i++){
-        r0 << i << "," << rels[0]->cols[0][i] << endl;
-    }
-    for(int i=0;i<rels[1]->numofentries;i++){
-        r1 << i << "," << rels[1]->cols[0][i] << endl;
-    }
-    cout << "-----------------------------------------------" << endl;
-    for(int i=0;i<numofrels;i++){
-        for (int j=0;j<rels[i]->numofcols;j++) {
-            cout << "first number of column: " << j << " " << (uint64_t)*rels[i]->cols[j] << endl;
-            cout << "last number of column: " << j << " " << (uint64_t)rels[i]->cols[j][rels[i]->numofentries-1] << endl;
-        }
-    }
-    
-    result = RadixHashJoin(rels[0],0,rels[1],0);
-    // print list
-    result->print();
-
-    // delete result;
 }

@@ -12,12 +12,15 @@
 
 using namespace std;
 
+#ifndef JOIN_H
+#define JOIN_H
+
 #define n_last_digits 3 //number of last digits for hash function 1
 #define divisor 13 //hash function 2 mod value
 #define bufsize 40 //size of bytes for each listnode tuple array
 
 // globals
-int numofbuckets;
+extern int numofbuckets;
 
 struct Tuple {
     int key;
@@ -79,3 +82,5 @@ int hashfun2(int value);
 void create_indexing(int numofentries,Tuple *table,int* hist, int** chain, int** bucket);
 list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket);
 void free_memory(Tuple** hash,int** hist,int** psum);
+
+#endif

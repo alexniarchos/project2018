@@ -4,8 +4,9 @@
 #include <iostream>
 #include <vector>
 
+#ifndef PARSER_H
+#define PARSER_H
 using namespace std;
-
 class SQLquery{
     vector<int*> views; //has 2 values ||    for example r0.c1 will be 0 1
     vector<int> relations;
@@ -20,3 +21,4 @@ class SQLquery{
         int parser(char* query);
 
 };
+#endif
