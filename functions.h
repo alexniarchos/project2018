@@ -13,3 +13,4 @@
 #include "join.h"
 
 void categoriser(SQLquery* query);
+void none_of_two_in_midresults(int r0,int c0, int r1,int c1,vector<midResult*> midresults,relation** rels);

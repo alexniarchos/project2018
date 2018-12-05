@@ -1,4 +1,38 @@
 #include "functions.h"
+#include "join.h"
+
+//execute using rhj and create new midresult object
+void none_of_two_in_midresults(int r0,int c0, int r1,int c1,vector<midResult*> midresults,relation** rels){
+    list *result=NULL;
+    result = RadixHashJoin(rels[r0],c0,rels[r1],c1);
+    midResult *midres = new midResult();
+    midres->cols->push_back(vector<int>);
+    midres->cols->push_back(vector<int>);
+    // copy result into midResult object
+    int sum=0,limit;
+    listnode *temp = result->head;
+    while(temp!=NULL){
+        sum+=bufsize/sizeof(result);
+        limit = bufsize/sizeof(result);
+        if(sum > tupleCount){
+            limit = tupleCount % (bufsize/sizeof(result));
+        }
+        for(int i=0;i<limit;i++){
+            // cout << temp->tuples[i].rowId1 << " , " << temp->tuples[i].rowId2 << endl;
+            midres->cols[0].push_back(temp->tuples[i].rowId1);
+            midres->cols[1].push_back(temp->tuples[i].rowId2);
+        }
+        temp = temp->next;
+    }
+    midres->relId.push_back(r0);
+    midres->relId.push_back(r1);
+    midresults.push_back(midres);
+}
+
+//execute using scan and merge the midresults objects
+void both_in_diff_midresults(int r0,int c0, int r1,int c1,vector<midResult*> midresults){
+
+}
 
 void categoriser(SQLquery* query){
     //find all the filters and put them on front

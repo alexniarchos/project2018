@@ -40,7 +40,7 @@ struct relation{
 
 class midResult{
     public:
-        vector<int*> cols;
+        vector<vector<int>> cols;
         int colSize;
         vector<int> relId;
 };
@@ -80,7 +80,7 @@ relation** init_relations(int *numofrels);
 void sort_hashtable(uint64_t *col,int numofentries,Tuple** hash,int** hist,int** psum);
 int hashfun2(int value);
 void create_indexing(int numofentries,Tuple *table,int* hist, int** chain, int** bucket);
-list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket);
+list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket,int biggestTable);
 void free_memory(Tuple** hash,int** hist,int** psum);
 
 #endif
