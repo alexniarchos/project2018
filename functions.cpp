@@ -9,11 +9,35 @@ int checkfilter(SQLquery* query){
     return -1;
 }
 
-void categoriser(SQLquery* query){
+void categoriser(SQLquery* query,relation **rels){
     int index;
     while((index=checkfilter(query))!=-1){
+        int rel_index=query->predicates[index][0];
+        int col_index=query->predicates[index][1];
+        //checkmidresults(rel_index);
+        if(query->predicates[index][2]==0){
+            for(int i=0;i<rels[rel_index]->numofentries;i++){
+                if(rels[rel_index]->cols[col_index][i]==query->predicates[index][3]){
+                    //add to tempresults
+                }
+            }
+        }
+        else if(query->predicates[index][2]==1){
+            for(int i=0;i<rels[rel_index]->numofentries;i++){
+                if(rels[rel_index]->cols[col_index][i]>query->predicates[index][3]){
+                    //add to tempresults
+                }
+            }
+        }
+        else{
+            for(int i=0;i<rels[rel_index]->numofentries;i++){
+                if(rels[rel_index]->cols[col_index][i]<query->predicates[index][3]){
+                    //add to tempresults
+                }
+            }
+        }
+        //inform mid results
         query->predicates.erase(query->predicates.begin()+index);
-        //execute filters
     }
     //build score array with size the number of non filter predicates at the beggining
     //while loop through non-filter-predicates

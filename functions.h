@@ -12,5 +12,5 @@
 #include "parser.h"
 #include "join.h"
 
-void categoriser(SQLquery* query);
+void categoriser(SQLquery* query,relation **rels);
 int checkfilter(SQLquery* query);
