@@ -1,36 +1,38 @@
 #include "functions.h"
 #include "join.h"
 
-//execute using rhj and create new midresult object
-void none_of_two_in_midresults(int r0,int c0, int r1,int c1,vector<midResult*> midresults,relation** rels){
+// execute using rhj and create new midresult object
+void none_of_two_in_midresults(int r0,int c0, int r1,int c1,vector<midResult*> *midresults,relation** rels){
     list *result=NULL;
     result = RadixHashJoin(rels[r0],c0,rels[r1],c1);
     midResult *midres = new midResult();
-    midres->cols->push_back(vector<int>);
-    midres->cols->push_back(vector<int>);
+    midres->cols.push_back((int*)malloc(result->tupleCount*sizeof(int)));
+    midres->cols.push_back((int*)malloc(result->tupleCount*sizeof(int)));
     // copy result into midResult object
-    int sum=0,limit;
+    int sum=0,limit,counter=0;
     listnode *temp = result->head;
     while(temp!=NULL){
         sum+=bufsize/sizeof(result);
         limit = bufsize/sizeof(result);
-        if(sum > tupleCount){
-            limit = tupleCount % (bufsize/sizeof(result));
+        if(sum > result->tupleCount){
+            limit = result->tupleCount % (bufsize/sizeof(result));
         }
         for(int i=0;i<limit;i++){
             // cout << temp->tuples[i].rowId1 << " , " << temp->tuples[i].rowId2 << endl;
-            midres->cols[0].push_back(temp->tuples[i].rowId1);
-            midres->cols[1].push_back(temp->tuples[i].rowId2);
+            midres->cols[0][counter] = temp->tuples[i].rowId1;
+            midres->cols[1][counter] = temp->tuples[i].rowId2;
+            counter++;
         }
         temp = temp->next;
     }
     midres->relId.push_back(r0);
     midres->relId.push_back(r1);
-    midresults.push_back(midres);
+    midres->colSize = result->tupleCount;
+    midresults->push_back(midres);
 }
 
-//execute using scan and merge the midresults objects
-void both_in_diff_midresults(int r0,int c0, int r1,int c1,vector<midResult*> midresults){
+// execute using scan and merge the midresults objects
+void both_in_diff_midresults(int r0,int c0, int r1,int c1,vector<midResult*> *midresults){
 
 }
 
@@ -44,35 +46,44 @@ int checkfilter(SQLquery* query){
 }
 
 void categoriser(SQLquery* query,relation **rels){
-    int index;
-    while((index=checkfilter(query))!=-1){
-        int rel_index=query->predicates[index][0];
-        int col_index=query->predicates[index][1];
-        //checkmidresults(rel_index);
-        if(query->predicates[index][2]==0){
-            for(int i=0;i<rels[rel_index]->numofentries;i++){
-                if(rels[rel_index]->cols[col_index][i]==query->predicates[index][3]){
-                    //add to tempresults
-                }
-            }
-        }
-        else if(query->predicates[index][2]==1){
-            for(int i=0;i<rels[rel_index]->numofentries;i++){
-                if(rels[rel_index]->cols[col_index][i]>query->predicates[index][3]){
-                    //add to tempresults
-                }
-            }
-        }
-        else{
-            for(int i=0;i<rels[rel_index]->numofentries;i++){
-                if(rels[rel_index]->cols[col_index][i]<query->predicates[index][3]){
-                    //add to tempresults
-                }
-            }
-        }
-        //inform mid results
-        query->predicates.erase(query->predicates.begin()+index);
+    // int index;
+    // while((index=checkfilter(query))!=-1){
+    //     int rel_index=query->predicates[index][0];
+    //     int col_index=query->predicates[index][1];
+    //     //checkmidresults(rel_index);
+    //     if(query->predicates[index][2]==0){
+    //         for(int i=0;i<rels[rel_index]->numofentries;i++){
+    //             if(rels[rel_index]->cols[col_index][i]==query->predicates[index][3]){
+    //                 //add to tempresults
+    //             }
+    //         }
+    //     }
+    //     else if(query->predicates[index][2]==1){
+    //         for(int i=0;i<rels[rel_index]->numofentries;i++){
+    //             if(rels[rel_index]->cols[col_index][i]>query->predicates[index][3]){
+    //                 //add to tempresults
+    //             }
+    //         }
+    //     }
+    //     else{
+    //         for(int i=0;i<rels[rel_index]->numofentries;i++){
+    //             if(rels[rel_index]->cols[col_index][i]<query->predicates[index][3]){
+    //                 //add to tempresults
+    //             }
+    //         }
+    //     }
+    //     //inform mid results
+    //     query->predicates.erase(query->predicates.begin()+index);
+    // }
+    vector<midResult*> midresults;
+    none_of_two_in_midresults(0,0,1,0,&midresults,rels);
+    for(int i=0;i<midresults[0]->colSize;i++){
+        cout << midresults[0]->cols[0][i] << "," << midresults[0]->cols[1][i] << endl;
     }
+    for(int i=0;i<midresults[0]->relId.size();i++){
+        cout << midresults[0]->relId[i] << endl;
+    }
+    
     //build score array with size the number of non filter predicates at the beggining
     //while loop through non-filter-predicates
         //sort the predicates according to the relations used

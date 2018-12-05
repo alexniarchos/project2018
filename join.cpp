@@ -228,8 +228,8 @@ void create_indexing(int numofentries,Tuple *table,int* hist, int** chain, int**
 
 list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket, int biggestTable){
     int h1,h2,chainVal,chainPos;
-    ofstream output;
-    output.open("output.csv");
+    // ofstream output;
+    // output.open("output.csv");
     list *l = new list();
     for(int i=0;i<numofentries;i++){
         h1 = hashvalue(dec_to_bin(A[i].payload),n_last_digits);
@@ -241,11 +241,11 @@ list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket, in
         while(1){
             if(B[chainPos].payload == A[i].payload){
                 if(biggestTable == 1){
-                    output << A[i].key << "," << B[chainPos].key << endl;
+                    // output << A[i].key << "," << B[chainPos].key << endl;
                     l->add(A[i].key,B[chainPos].key);
                 }
                 else if(biggestTable == 2){
-                    output << B[chainPos].key << "," << A[i].key << endl;
+                    // output << B[chainPos].key << "," << A[i].key << endl;
                     l->add(B[chainPos].key,A[i].key);
                 }
             }
@@ -255,7 +255,7 @@ list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket, in
             chainPos = chain[chainPos];
         }
     }
-    output.close();
+    // output.close();
     return l;
 }
 
