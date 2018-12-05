@@ -1,8 +1,20 @@
 #include "functions.h"
 
+int checkfilter(SQLquery* query){
+    for(int i=0;i<query->predicates.size();i++){
+        if(query->predicates[i][4]==-1){
+            return i;
+        }
+    }
+    return -1;
+}
+
 void categoriser(SQLquery* query){
-    //find all the filters and put them on front
-    //execute filters
+    int index;
+    while((index=checkfilter(query))!=-1){
+        query->predicates.erase(query->predicates.begin()+index);
+        //execute filters
+    }
     //build score array with size the number of non filter predicates at the beggining
     //while loop through non-filter-predicates
         //sort the predicates according to the relations used

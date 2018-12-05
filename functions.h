@@ -13,3 +13,4 @@
 #include "join.h"
 
 void categoriser(SQLquery* query);
+int checkfilter(SQLquery* query);
