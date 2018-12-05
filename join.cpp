@@ -226,7 +226,7 @@ void create_indexing(int numofentries,Tuple *table,int* hist, int** chain, int**
     }
 }
 
-list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket){
+list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket, int biggestTable){
     int h1,h2,chainVal,chainPos;
     ofstream output;
     output.open("output.csv");
@@ -240,8 +240,14 @@ list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket){
         }
         while(1){
             if(B[chainPos].payload == A[i].payload){
-                output << A[i].key << "," << B[chainPos].key << endl;
-                l->add(A[i].key,B[chainPos].key);
+                if(biggestTable == 1){
+                    output << A[i].key << "," << B[chainPos].key << endl;
+                    l->add(A[i].key,B[chainPos].key);
+                }
+                else if(biggestTable == 2){
+                    output << B[chainPos].key << "," << A[i].key << endl;
+                    l->add(B[chainPos].key,A[i].key);
+                }
             }
             if(chain[chainPos] == -1){
                 break;
@@ -291,12 +297,12 @@ list* RadixHashJoin(relation *relA,int numofcolA, relation *relB,int numofcolB){
     // Create indexing to the array with the least amount of entries
     if(relA->numofentries < relB->numofentries){
         create_indexing(relA->numofentries,A_Sorted,A_hist,&A_chain,&A_bucket);
-        l = getResults(relB->numofentries,B_Sorted,A_Sorted,A_chain,A_bucket);
+        l = getResults(relB->numofentries,B_Sorted,A_Sorted,A_chain,A_bucket,2);
         free(A_chain);
         free(A_bucket);
     }else{
         create_indexing(relB->numofentries,B_Sorted,B_hist,&B_chain,&B_bucket);
-        l = getResults(relA->numofentries,A_Sorted,B_Sorted,B_chain,B_bucket);
+        l = getResults(relA->numofentries,A_Sorted,B_Sorted,B_chain,B_bucket,1);
         free(B_chain);
         free(B_bucket);
     }

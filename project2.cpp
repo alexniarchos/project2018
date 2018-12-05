@@ -15,7 +15,7 @@ int main(void){
             break;
         SQLquery* query=new SQLquery();
         query->parser(line);
-        categoriser(query);
+        categoriser(query,rels);
         delete(query);
     }       
     free(line);

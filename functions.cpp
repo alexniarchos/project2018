@@ -34,9 +34,45 @@ void both_in_diff_midresults(int r0,int c0, int r1,int c1,vector<midResult*> mid
 
 }
 
-void categoriser(SQLquery* query){
-    //find all the filters and put them on front
-    //execute filters
+int checkfilter(SQLquery* query){
+    for(int i=0;i<query->predicates.size();i++){
+        if(query->predicates[i][4]==-1){
+            return i;
+        }
+    }
+    return -1;
+}
+
+void categoriser(SQLquery* query,relation **rels){
+    int index;
+    while((index=checkfilter(query))!=-1){
+        int rel_index=query->predicates[index][0];
+        int col_index=query->predicates[index][1];
+        //checkmidresults(rel_index);
+        if(query->predicates[index][2]==0){
+            for(int i=0;i<rels[rel_index]->numofentries;i++){
+                if(rels[rel_index]->cols[col_index][i]==query->predicates[index][3]){
+                    //add to tempresults
+                }
+            }
+        }
+        else if(query->predicates[index][2]==1){
+            for(int i=0;i<rels[rel_index]->numofentries;i++){
+                if(rels[rel_index]->cols[col_index][i]>query->predicates[index][3]){
+                    //add to tempresults
+                }
+            }
+        }
+        else{
+            for(int i=0;i<rels[rel_index]->numofentries;i++){
+                if(rels[rel_index]->cols[col_index][i]<query->predicates[index][3]){
+                    //add to tempresults
+                }
+            }
+        }
+        //inform mid results
+        query->predicates.erase(query->predicates.begin()+index);
+    }
     //build score array with size the number of non filter predicates at the beggining
     //while loop through non-filter-predicates
         //sort the predicates according to the relations used
