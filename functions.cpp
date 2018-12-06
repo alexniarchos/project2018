@@ -139,6 +139,7 @@ void executefilters(SQLquery* query,relation **rels,vector<midResult*> &midresul
             tempmidResult->colSize=counter;
             tempmidResult->relId.push_back(rel_index);
             tempmidResult->cols.push_back(tempresults);
+            midresults.push_back(tempmidResult);
         }
         query->predicates.erase(query->predicates.begin()+index);
     }
