@@ -40,7 +40,7 @@ struct relation{
 
 class midResult{
     public:
-        vector<vector<int>> cols;
+        vector<int*> cols;
         int colSize;
         vector<int> relId;
 };
