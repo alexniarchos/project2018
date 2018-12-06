@@ -2,36 +2,51 @@
 #include "join.h"
 
 //execute using rhj and create new midresult object
-// void none_of_two_in_midresults(int r0,int c0, int r1,int c1,vector<midResult*> midresults,relation** rels){
-//     list *result=NULL;
-//     result = RadixHashJoin(rels[r0],c0,rels[r1],c1);
-//     midResult *midres = new midResult();
-//     midres->cols->push_back(vector<int>);
-//     midres->cols->push_back(vector<int>);
-//     // copy result into midResult object
-//     int sum=0,limit;
-//     listnode *temp = result->head;
-//     while(temp!=NULL){
-//         sum+=bufsize/sizeof(result);
-//         limit = bufsize/sizeof(result);
-//         if(sum > tupleCount){
-//             limit = tupleCount % (bufsize/sizeof(result));
-//         }
-//         for(int i=0;i<limit;i++){
-//             // cout << temp->tuples[i].rowId1 << " , " << temp->tuples[i].rowId2 << endl;
-//             midres->cols[0].push_back(temp->tuples[i].rowId1);
-//             midres->cols[1].push_back(temp->tuples[i].rowId2);
-//         }
-//         temp = temp->next;
-//     }
-//     midres->relId.push_back(r0);
-//     midres->relId.push_back(r1);
-//     midresults.push_back(midres);
-// }
+void none_of_two_in_midresults(int r0,int c0, int r1,int c1,vector<midResult*> *midresults,relation** rels){
+    list *result=NULL;
+    result = RadixHashJoin(rels[r0],c0,rels[r1],c1);
+    midResult *midres = new midResult();
+    midres->cols.push_back((int*)malloc(result->tupleCount*sizeof(int)));
+    midres->cols.push_back((int*)malloc(result->tupleCount*sizeof(int)));
+    // copy result into midResult object
+    int sum=0,limit,counter=0;
+    listnode *temp = result->head;
+    while(temp!=NULL){
+        sum+=bufsize/sizeof(result);
+        limit = bufsize/sizeof(result);
+        if(sum > result->tupleCount){
+            limit = result->tupleCount % (bufsize/sizeof(result));
+        }
+        for(int i=0;i<limit;i++){
+            // cout << temp->tuples[i].rowId1 << " , " << temp->tuples[i].rowId2 << endl;
+            midres->cols[0][counter] = temp->tuples[i].rowId1;
+            midres->cols[1][counter] = temp->tuples[i].rowId2;
+            counter++;
+        }
+        temp = temp->next;
+    }
+    midres->relId.push_back(r0);
+    midres->relId.push_back(r1);
+    midres->colSize = result->tupleCount;
+    midresults->push_back(midres);
+}
 
 //execute using scan and merge the midresults objects
-void both_in_diff_midresults(int r0,int c0, int r1,int c1,vector<midResult*> midresults){
-
+void both_in_diff_midresults(int r0,int c0, int r1,int c1,vector<midResult*> *midresults,relation **rels){
+    // find in which midresult belongs each relation
+    int midresId_r0,midresId_r1;
+    for(int i=0;i<midresults->size();i++){
+        for(int j=0;j<midresults->at(i)->relId.size();j++){
+            if(midresults->at(i)->relId[j] == r0){
+                midresId_r0 = i;
+            }
+            if(midresults->at(i)->relId[j] == r1){
+                midresId_r1 = i;
+            }
+        }
+    }
+    cout << "midresId_r0 = " << midresId_r0 << " midresId_r1 = " << midresId_r1 << endl;
+    
 }
 
 int checkfilter(SQLquery* query){
@@ -207,6 +222,7 @@ int checkcases(SQLquery* query,int index,vector<int> scoretable,vector<midResult
 void categoriser(SQLquery* query,relation **rels){
     vector<midResult*> midresults;
     executefilters(query,rels,midresults);
+    cout << "midres size = " << midresults.size() << endl;
     int numofqueries=query->predicates.size();
     vector<int> scoretable;
     for(int i=0;i<numofqueries;i++){
@@ -216,8 +232,11 @@ void categoriser(SQLquery* query,relation **rels){
         }
         else{   //2)belong to different relations
             int ret=checkcases(query,index,scoretable,midresults);
+            cout << "Query: " << query->predicates[index][0] << "." << query->predicates[index][1] << " " << query->predicates[index][3] << "." << query->predicates[index][4] << endl;
+            cout << "ret = " << ret << endl;
             if(ret==1){//2.1)none of 2 are in mid results
                 //execute using rhj and build midresult object
+                none_of_two_in_midresults(query->predicates[index][0],query->predicates[index][1], query->predicates[index][3],query->predicates[index][4], &midresults, rels);
             }
             if(ret==2){//2.2)one of 2 belongs to midresults array of objects
                 //execute using rhj and add the second relation column to the midresult object the other relation is
@@ -226,7 +245,8 @@ void categoriser(SQLquery* query,relation **rels){
                 //execute using scan and update the midresult object
             }
             if(ret==4){//2.4)2 of 2 belong to different midresult objects
-                //execute using scan and merge the midresults objects
+                //execute using rhj and merge the midresults objects
+                both_in_diff_midresults(query->predicates[index][0],query->predicates[index][1], query->predicates[index][3],query->predicates[index][4], &midresults, rels);
             }   
         }
         query->predicates.erase(query->predicates.begin()+index);
