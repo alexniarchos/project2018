@@ -181,14 +181,14 @@ int checkcases(SQLquery* query,int index,vector<int> scoretable,vector<midResult
                 for(int z=0;z<midresults[j]->relId.size();z++){
                     if(c==0){
                         if(query->predicates[index][0]==midresults[j]->relId[z]){
-                            jkeeper1=1;
+                            jkeeper1=j;
                             flag=1;
                             break;
                         }
                     }
                     else{
                         if(query->predicates[index][3]==midresults[j]->relId[z]){
-                            jkeeper2=1;
+                            jkeeper2=j;
                             flag=1;
                             break;
                         }
@@ -216,6 +216,8 @@ void categoriser(SQLquery* query,relation **rels){
             //execute using scan)
         }
         else{   //2)belong to different relations
+            cout<<midresults[0]->relId[0]<<endl;
+            cout<<midresults[1]->relId[0]<<endl;
             int ret=checkcases(query,index,scoretable,midresults);
             if(ret==1){//2.1)none of 2 are in mid results
                 //execute using rhj and build midresult object
