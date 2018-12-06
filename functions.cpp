@@ -160,10 +160,48 @@ int sortpredicates(SQLquery* query,vector<midResult*> midresults,vector<int> &sc
     for(int i=0;i<scoretable.size();i++){
         if(scoretable[i]==2)
             return i;
-        if(scoretable[i]==1)
+        else if(scoretable[i]==1)
             oneflag=i;
     }
     return oneflag;
+}
+
+int checkcases(SQLquery* query,int index,vector<int> scoretable,vector<midResult*> midresults){
+    if(scoretable[index]==0)
+        return 1;
+    else if(scoretable[index]==1)
+        return 2;
+    else if(scoretable[index]==2){
+        int jkeeper1=-1;
+        int jkeeper2=-1;
+        for(int c=0;c<2;c++){
+            int flag=0;
+            for(int j=0;j<midresults.size();j++){
+                for(int z=0;z<midresults[j]->relId.size();z++){
+                    if(c==0){
+                        if(query->predicates[index][0]==midresults[j]->relId[z]){
+                            jkeeper1=1;
+                            flag=1;
+                            break;
+                        }
+                    }
+                    else{
+                        if(query->predicates[index][3]==midresults[j]->relId[z]){
+                            jkeeper2=1;
+                            flag=1;
+                            break;
+                        }
+                    }
+                }
+                if(flag)
+                    break;
+            }
+        }
+        if(jkeeper1==jkeeper2)
+            return 3;
+        else
+            return 4;
+    }
 }
 
 void categoriser(SQLquery* query,relation **rels){
@@ -173,22 +211,26 @@ void categoriser(SQLquery* query,relation **rels){
     vector<int> scoretable;
     for(int i=0;i<numofqueries;i++){
         int index=sortpredicates(query,midresults,scoretable);
-        //execute predicate
-            //situations
-                //1)are at the same relation
-                    //execute using scan)
-                //2)belong to different relations
-                    //2.1)none of 2 are in mid results
-                        //execute using rhj and build midresult object
-                    //2.2)one of 2 belongs to midresults array of objects
-                        //execute using rhj and add the second relation column to the midresult object the other relation is
-                    //2.3)2 of 2 belong to the same midresult object
-                        //execute using scan and update the midresult object
-                    //2.4)2 of 2 belong to different midresult objects
-                        //execute using scan and merge the midresults objects
-            //end of situations
-        //end of execution
+        if(query->predicates[index][0]==query->predicates[index][3]){ //1)are at the same relation
+            //execute using scan)
+        }
+        else{   //2)belong to different relations
+            int ret=checkcases(query,index,scoretable,midresults);
+            if(ret==1){//2.1)none of 2 are in mid results
+                //execute using rhj and build midresult object
+            }
+            if(ret==2){//2.2)one of 2 belongs to midresults array of objects
+                //execute using rhj and add the second relation column to the midresult object the other relation is
+            }
+            if(ret==3){//2.3)2 of 2 belong to the same midresult object
+                //execute using scan and update the midresult object
+            }
+            if(ret==4){//2.4)2 of 2 belong to different midresult objects
+                //execute using scan and merge the midresults objects
+            }   
+        }
         query->predicates.erase(query->predicates.begin()+index);
+        scoretable.clear();
     }
         
 }
