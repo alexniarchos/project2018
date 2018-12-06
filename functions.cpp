@@ -216,8 +216,6 @@ void categoriser(SQLquery* query,relation **rels){
             //execute using scan)
         }
         else{   //2)belong to different relations
-            cout<<midresults[0]->relId[0]<<endl;
-            cout<<midresults[1]->relId[0]<<endl;
             int ret=checkcases(query,index,scoretable,midresults);
             if(ret==1){//2.1)none of 2 are in mid results
                 //execute using rhj and build midresult object
