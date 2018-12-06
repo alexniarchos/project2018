@@ -196,14 +196,14 @@ int checkcases(SQLquery* query,int index,vector<int> scoretable,vector<midResult
                 for(int z=0;z<midresults[j]->relId.size();z++){
                     if(c==0){
                         if(query->predicates[index][0]==midresults[j]->relId[z]){
-                            jkeeper1=1;
+                            jkeeper1=j;
                             flag=1;
                             break;
                         }
                     }
                     else{
                         if(query->predicates[index][3]==midresults[j]->relId[z]){
-                            jkeeper2=1;
+                            jkeeper2=j;
                             flag=1;
                             break;
                         }
