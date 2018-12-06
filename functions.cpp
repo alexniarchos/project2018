@@ -128,12 +128,51 @@ void executefilters(SQLquery* query,relation **rels,vector<midResult*> &midresul
         query->predicates.erase(query->predicates.begin()+index);
     }
 }
+
+int sortpredicates(SQLquery* query,vector<midResult*> midresults){
+    vector<int> scoretable;
+    for(int i=0;i<query->predicates.size();i++){
+        scoretable.push_back(0);
+        for(int c=0;c<2;c++){
+            int flag=0;
+            for(int j=0;j<midresults.size();j++){
+                for(int z=0;z<midresults[j]->relId.size();z++){
+                    if(c==0){
+                        if(query->predicates[i][0]==midresults[j]->relId[z]){
+                            scoretable[i]++;
+                            flag=1;
+                            break;
+                        }
+                    }
+                    else{
+                        if(query->predicates[i][3]==midresults[j]->relId[z]){
+                            scoretable[i]++;
+                            flag=1;
+                            break;
+                        }
+                    }
+                }
+                if(flag)
+                    break;
+            }
+        }
+    }
+    int oneflag=0;
+    for(int i=0;i<scoretable.size();i++){
+        if(scoretable[i]==2)
+            return i;
+        if(scoretable[i]==1)
+            oneflag=i;
+    }
+    return oneflag;
+}
+
 void categoriser(SQLquery* query,relation **rels){
     vector<midResult*> midresults;
-    executefilters(query,rels,midresults); 
-    //build score array with size the number of non filter predicates at the beggining
-    //while loop through non-filter-predicates
-        //sort the predicates according to the relations used
+    executefilters(query,rels,midresults);
+    int numofqueries=query->predicates.size(); 
+    for(int i=0;i<numofqueries;i++){
+        int index=sortpredicates(query,midresults);
         //execute predicate
             //situations
                 //1)are at the same relation
@@ -149,6 +188,7 @@ void categoriser(SQLquery* query,relation **rels){
                         //execute using scan and merge the midresults objects
             //end of situations
         //end of execution
-        //add after each iteration the new relations that have been used to the score array
-    //endfor
+        query->predicates.erase(query->predicates.begin()+index);
+    }
+        
 }
