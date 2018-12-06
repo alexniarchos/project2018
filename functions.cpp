@@ -130,7 +130,7 @@ void executefilters(SQLquery* query,relation **rels,vector<midResult*> &midresul
 }
 void categoriser(SQLquery* query,relation **rels){
     vector<midResult*> midresults;
-    executefilters(query,rels,midresults);
+    executefilters(query,rels,midresults); 
     //build score array with size the number of non filter predicates at the beggining
     //while loop through non-filter-predicates
         //sort the predicates according to the relations used
