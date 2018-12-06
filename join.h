@@ -82,5 +82,6 @@ int hashfun2(int value);
 void create_indexing(int numofentries,Tuple *table,int* hist, int** chain, int** bucket);
 list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket,int biggestTable);
 void free_memory(Tuple** hash,int** hist,int** psum);
+list* RadixHashJoin(relation *relA,int numofcolA, relation *relB,int numofcolB);
 
 #endif
