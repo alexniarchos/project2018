@@ -129,8 +129,7 @@ void executefilters(SQLquery* query,relation **rels,vector<midResult*> &midresul
     }
 }
 
-int sortpredicates(SQLquery* query,vector<midResult*> midresults){
-    vector<int> scoretable;
+int sortpredicates(SQLquery* query,vector<midResult*> midresults,vector<int> &scoretable){
     for(int i=0;i<query->predicates.size();i++){
         scoretable.push_back(0);
         for(int c=0;c<2;c++){
@@ -170,9 +169,10 @@ int sortpredicates(SQLquery* query,vector<midResult*> midresults){
 void categoriser(SQLquery* query,relation **rels){
     vector<midResult*> midresults;
     executefilters(query,rels,midresults);
-    int numofqueries=query->predicates.size(); 
+    int numofqueries=query->predicates.size();
+    vector<int> scoretable;
     for(int i=0;i<numofqueries;i++){
-        int index=sortpredicates(query,midresults);
+        int index=sortpredicates(query,midresults,scoretable);
         //execute predicate
             //situations
                 //1)are at the same relation
