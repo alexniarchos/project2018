@@ -14,5 +14,6 @@
 
 void categoriser(SQLquery* query,relation **rels);
 int checkfilter(SQLquery* query);
-void none_of_two_in_midresults(int r0,int c0, int r1,int c1,vector<midResult*> midresults,relation** rels);
+void none_of_two_in_midresults(SQLquery* query,int index,relation** rels,vector<midResult*> &midresults);
+void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<midResult*> &midresults);
 int checkmidresults(int rel_index,vector<midResult*> &midresults);
