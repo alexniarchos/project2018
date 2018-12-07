@@ -35,18 +35,23 @@ void none_of_two_in_midresults(int r0,int c0, int r1,int c1,vector<midResult*> *
 void both_in_diff_midresults(int r0,int c0, int r1,int c1,vector<midResult*> *midresults,relation **rels){
     // find in which midresult belongs each relation
     int midresId_r0,midresId_r1;
+    list *result=NULL;
     for(int i=0;i<midresults->size();i++){
         for(int j=0;j<midresults->at(i)->relId.size();j++){
             if(midresults->at(i)->relId[j] == r0){
-                midresId_r0 = i;
+                midresPos_r0 = i;
+                relPos_r0 = j;
             }
             if(midresults->at(i)->relId[j] == r1){
-                midresId_r1 = i;
+                midresPos_r0 = i;
+                relPos_r1 = j;
             }
         }
     }
-    cout << "midresId_r0 = " << midresId_r0 << " midresId_r1 = " << midresId_r1 << endl;
-    
+    cout << "midresPos_r0 = " << midresPos_r0 << " midresPos_r0 = " << midresPos_r0 << endl;
+
+    // join
+    result = RadixHashJoin();
 }
 
 int checkfilter(SQLquery* query){
@@ -246,7 +251,7 @@ void categoriser(SQLquery* query,relation **rels){
                 //execute using scan and update the midresult object
             }
             if(ret==4){//2.4)2 of 2 belong to different midresult objects
-                //execute using rhj and merge the midresults objects
+                //execute using scan and merge the midresults objects
                 both_in_diff_midresults(query->predicates[index][0],query->predicates[index][1], query->predicates[index][3],query->predicates[index][4], &midresults, rels);
             }   
         }

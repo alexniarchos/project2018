@@ -311,3 +311,49 @@ list* RadixHashJoin(relation *relA,int numofcolA, relation *relB,int numofcolB){
     free_memory(&B_Sorted,&B_hist,&B_psum);
     return l;
 }
+
+list* RadixHashJoin_with_RowIds(uint64_t* A, int A_size, uint64_t* B, int B_size){
+    Tuple *A_Sorted,*B_Sorted;
+    int *A_hist,*A_psum,*B_hist,*B_psum,*A_chain,*A_bucket,*B_chain,*B_bucket;
+    list *l;
+    
+    // init arrays and sort
+    A_Sorted = (Tuple*)malloc(A_size*sizeof(Tuple));
+    for (int i=0;i<A_size;i++){
+        A_Sorted[i].key = -1;
+    }
+    A_hist=(int*)malloc(numofbuckets*sizeof(int));
+    for(int i=0;i<numofbuckets;i++)
+        A_hist[i]=0;
+    A_psum=(int*)malloc(numofbuckets*sizeof(int));
+
+    sort_hashtable(A,A_size,&A_Sorted,&A_hist,&A_psum);
+
+    B_Sorted = (Tuple*)malloc(relB->numofentries*sizeof(Tuple));
+    for (int i=0;i<relB->numofentries;i++){
+        B_Sorted[i].key = -1;
+    }
+    B_hist=(int*)malloc(numofbuckets*sizeof(int));
+    for(int i=0;i<numofbuckets;i++)
+        B_hist[i]=0;
+    B_psum=(int*)malloc(numofbuckets*sizeof(int));
+
+    sort_hashtable(B,B_size,&B_Sorted,&B_hist,&B_psum);
+
+    // Create indexing to the array with the least amount of entries
+    if(A_size < B_size){
+        create_indexing(A_size,A_Sorted,A_hist,&A_chain,&A_bucket);
+        l = getResults(B_size,B_Sorted,A_Sorted,A_chain,A_bucket,2);
+        free(A_chain);
+        free(A_bucket);
+    }else{
+        create_indexing(B_size,B_Sorted,B_hist,&B_chain,&B_bucket);
+        l = getResults(A_size,A_Sorted,B_Sorted,B_chain,B_bucket,1);
+        free(B_chain);
+        free(B_bucket);
+    }
+
+    free_memory(&A_Sorted,&A_hist,&A_psum);
+    free_memory(&B_Sorted,&B_hist,&B_psum);
+    return l;
+}
