@@ -204,7 +204,16 @@ int checkcases(SQLquery* query,int index,vector<int> scoretable,vector<midResult
             return 4;
     }
 }
+void samerelation(SQLquery* query,relation **rels,int index,vector<int> scoretable,vector<midResult*> &midresults){
+    int ret=checkcases(query,index,scoretable,midresults);
+    if(ret==1){//1.1)none of 2 are in mid results
 
+    }
+    else if(ret==3){//1.2)2 of 2 belong to the same midresult object
+        //execute using scan and update the midresult object
+    }
+
+}
 void categoriser(SQLquery* query,relation **rels){
     vector<midResult*> midresults;
     executefilters(query,rels,midresults);
@@ -212,21 +221,20 @@ void categoriser(SQLquery* query,relation **rels){
     vector<int> scoretable;
     for(int i=0;i<numofqueries;i++){
         int index=sortpredicates(query,midresults,scoretable);
-        if(query->predicates[index][0]==query->predicates[index][3]){ //1)are at the same relation
-            //execute using scan)
-        }
+        if(query->predicates[index][0]==query->predicates[index][3]) //1)are at the same relation
+            samerelation(query,rels,index,scoretable,midresults);  
         else{   //2)belong to different relations
             int ret=checkcases(query,index,scoretable,midresults);
             if(ret==1){//2.1)none of 2 are in mid results
                 //execute using rhj and build midresult object
             }
-            if(ret==2){//2.2)one of 2 belongs to midresults array of objects
+            else if(ret==2){//2.2)one of 2 belongs to midresults array of objects
                 //execute using rhj and add the second relation column to the midresult object the other relation is
             }
-            if(ret==3){//2.3)2 of 2 belong to the same midresult object
+            else if(ret==3){//2.3)2 of 2 belong to the same midresult object
                 //execute using scan and update the midresult object
             }
-            if(ret==4){//2.4)2 of 2 belong to different midresult objects
+            else if(ret==4){//2.4)2 of 2 belong to different midresult objects
                 //execute using scan and merge the midresults objects
             }   
         }
