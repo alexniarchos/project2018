@@ -309,17 +309,22 @@ void scansamemidresults(SQLquery* query,int index,relation **rels,vector<midResu
     for(int i=0;i<midresults.size();i++){
         for(int j=0;j<midresults[i]->relId.size();j++){
             if(midresults[i]->relId[j]==rel_index){
-                int* tempresults=(int*)malloc(midresults[i]->colSize*sizeof(int));
+                int** tempresults=(int**)malloc(midresults[i]->cols.size()*sizeof(int*));
+                for(int g=0;g<midresults[i]->cols.size();g++)
+                    tempresults[g]=(int*)malloc(midresults[i]->colSize*sizeof(int));
                 int counter=0;
                 for(int in=0;in<midresults[i]->colSize;in++){
                     if(rels[rel_index]->cols[col1][midresults[i]->cols[j][in]]==rels[rel_index]->cols[col2][midresults[i]->cols[j][in]]){
-                        tempresults[counter]=midresults[i]->cols[j][in];
+                        for(int g=0;g<midresults[i]->cols.size();g++)
+                            tempresults[g][counter]=midresults[i]->cols[g][in];
                         counter++;
                     }
                 }
                 midresults[i]->colSize=counter;
-                free(midresults[i]->cols[j]);
-                midresults[i]->cols[j]=tempresults;
+                for(int g=0;g<midresults[i]->cols.size();g++){
+                    free(midresults[i]->cols[g]);
+                    midresults[i]->cols[g]=tempresults[g];
+                }
                 return;
             }
         }
@@ -353,23 +358,79 @@ void diffrelationsamemidresult(SQLquery* query,int index,relation **rels,vector<
             }
         }
     }
-    int* tempresults1=(int*)malloc(midresults[midresultindex]->colSize*sizeof(int));
-    int* tempresults2=(int*)malloc(midresults[midresultindex]->colSize*sizeof(int));
     int counter=0;
+    int** tempresults=(int**)malloc(midresults[midresultindex]->cols.size()*sizeof(int*));
+        for(int g=0;g<midresults[midresultindex]->cols.size();g++)
+            tempresults[g]=(int*)malloc(midresults[midresultindex]->colSize*sizeof(int));
     for(int i=0;i<midresults[midresultindex]->colSize;i++){
-        for(int j=0;j<midresults[midresultindex]->colSize;j++){
-            if(rels[rel1]->cols[col1][midresults[midresultindex]->cols[midresultrel1][i]]==rels[rel2]->cols[col2][midresults[midresultindex]->cols[midresultrel2][j]]){
-                tempresults1[counter]=midresults[midresultindex]->cols[midresultrel1][i];
-                tempresults2[counter]=midresults[midresultindex]->cols[midresultrel2][j];
-                counter++;
-            }
-        } 
+        if(rels[rel1]->cols[col1][midresults[midresultindex]->cols[midresultrel1][i]]==rels[rel2]->cols[col2][midresults[midresultindex]->cols[midresultrel2][i]]){
+            for(int g=0;g<midresults[midresultindex]->cols.size();g++)
+                tempresults[g][counter]=midresults[midresultindex]->cols[g][i];
+            counter++;
+        }
     }
     midresults[midresultindex]->colSize=counter;
-    free(midresults[midresultindex]->cols[midresultrel1]);
-    free(midresults[midresultindex]->cols[midresultrel2]);
-    midresults[midresultindex]->cols[midresultrel1]=tempresults1;
-    midresults[midresultindex]->cols[midresultrel2]=tempresults2;
+    for(int g=0;g<midresults[midresultindex]->cols.size();g++){
+        free(midresults[midresultindex]->cols[g]);
+        midresults[midresultindex]->cols[g]=tempresults[g];
+    }
+}
+
+void diffrelationoneonmidresult(SQLquery* query,int index,relation **rels,vector<midResult*> &midresults){
+    int rel1=query->predicates[index][0];
+    int col1=query->predicates[index][1];
+    int rel2=query->predicates[index][3];
+    int col2=query->predicates[index][4];
+    int midresultindex,relinmidresult,colinmidresult,relnotinmidresult,colnotinmidresult,midresultrel;
+    for(int i=0;i<midresults.size();i++){
+        for(int j=0;j<midresults[i]->relId.size();j++){
+            if(midresults[i]->relId[j]==rel1){
+                midresultindex=i;
+                midresultrel=j;
+                relinmidresult=rel1;
+                colinmidresult=col1;
+                relnotinmidresult=rel2;
+                colnotinmidresult=col2;
+            }
+            if(midresults[i]->relId[j]==rel2){
+                midresultindex=i;
+                midresultrel=j;
+                relinmidresult=rel2;
+                colinmidresult=col2;
+                relnotinmidresult=rel1;
+                colnotinmidresult=col1;
+            }
+        }
+    }
+    uint64_t* rhjinput=(uint64_t*)malloc(midresults[midresultindex]->colSize*sizeof(uint64_t));
+    for(int i=0;i<midresults[midresultindex]->colSize;i++)
+        rhjinput[i]=rels[relinmidresult]->cols[colinmidresult][midresults[midresultindex]->cols[midresultrel][i]];
+    list *result=NULL;
+    result=RadixHashJoin(rhjinput,midresults[midresultindex]->colSize,rels[relnotinmidresult]->cols[colnotinmidresult],rels[relnotinmidresult]->numofentries);
+    int** tempresults=(int**)malloc((midresults[midresultindex]->cols.size()+1)*sizeof(int*));
+    for(int g=0;g<(midresults[midresultindex]->cols.size()+1);g++)
+        tempresults[g]=(int*)malloc(result->tupleCount*sizeof(int));
+    int counter=0;
+    listnode *temp = result->head;
+    for(int i=0;i<midresults[midresultindex]->colSize;i++){
+        if(midresults[midresultindex]->cols[midresultrel][i]==temp->tuples->rowId1){
+            for(int g=0;g<midresults[midresultindex]->cols.size();g++)
+                tempresults[g][counter]=midresults[midresultindex]->cols[g][i];
+            tempresults[midresults[midresultindex]->cols.size()][counter]=temp->tuples->rowId2;
+            counter++;
+            if(temp->next==NULL)
+                break;
+            temp=temp->next;
+        }
+    }
+    midresults[midresultindex]->colSize=counter;
+    for(int g=0;g<midresults[midresultindex]->cols.size();g++){
+        free(midresults[midresultindex]->cols[g]);
+        midresults[midresultindex]->cols[g]=tempresults[g];
+    }
+    int size=midresults[midresultindex]->cols.size();
+    midresults[midresultindex]->cols.push_back(tempresults[size]);
+    midresults[midresultindex]->relId.push_back(relnotinmidresult);
 }
 
 void differentrelation(SQLquery* query,relation **rels,int index,vector<int> scoretable,vector<midResult*> &midresults){
@@ -380,10 +441,9 @@ void differentrelation(SQLquery* query,relation **rels,int index,vector<int> sco
         //execute using rhj and build midresult object
         none_of_two_in_midresults(query,index,rels,midresults);
     }
-    else if(ret==2){//2.2)one of 2 belongs to midresults array of objects
-        //execute using rhj and add the second relation column to the midresult object the other relation is
-    }
-    else if(ret==3)//2 of 2 belong to the same midresult object
+    else if(ret==2)//2.2)one of 2 belongs to midresults array of objects //execute using rhj and add the second relation column to the midresult object the other relation is
+        diffrelationoneonmidresult(query,index,rels,midresults);
+    else if(ret==3)//2 of 2 belong to the same midresult object scan
         diffrelationsamemidresult(query,index,rels,midresults);
     else if(ret==4){//2.4)2 of 2 belong to different midresult objects
         //execute using scan and merge the midresults objects
