@@ -94,9 +94,18 @@ void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<mi
         }
         temp = temp->next;
     }
-    cout << "midresults.size = " << midresults.size() << endl;
-    cout << "midresPos_r0 = " << midresPos_r0 << endl;
-    cout << "midresPos_r1 = " << midresPos_r1 << endl;
+    // update midres colsize and rel ids
+    midres->colSize = result->tupleCount;
+    for(int i=0;i<midresults[midresPos_r0]->relId.size();i++){
+        midres->relId.push_back(midresults[midresPos_r0]->relId[i]);
+    }
+    for(int i=0;i<midresults[midresPos_r1]->relId.size();i++){
+        midres->relId.push_back(midresults[midresPos_r1]->relId[i]);
+    }
+    cout << "midres->colSize = " << midres->colSize << endl;
+    for(int i=0;i<midres->relId.size();i++){
+        cout << "relid = " << midres->relId[i] << endl;
+    }
     // delete old mid results and add the new one
     midresults.erase(midresults.begin()+midresPos_r0);
     // find second midres pos
@@ -109,6 +118,15 @@ void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<mi
     }
     midresults.erase(midresults.begin()+midresPos_r1);
     midresults.push_back(midres);
+    ofstream output;
+    output.open("output.csv");
+    for(int i=0;i<midres->colSize;i++){
+        for(int j=0;j<midres->cols.size();j++){
+            output << midres->cols[j][i] << ",";
+        }
+        output << endl;
+    }
+    output.close();
 }
 
 int checkfilter(SQLquery* query){
