@@ -1,6 +1,28 @@
 #include "functions.h"
 #include "join.h"
 
+void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresults){
+    int rel,col,sum=0;
+    for(int i=0;i<query->views.size();i++){
+        rel = query->views[i][0];
+        col = query->views[i][1];
+        cout << rel << "." << col << endl;
+        for(int j=0;j<midresults[0]->cols.size();j++){
+            if(rel == midresults[0]->relId[j]){
+                cout << "rel: " << rel << endl;
+                cout << "j = " << j << endl;
+                sum=0;
+                for(int k=0;k<midresults[0]->colSize;k++){
+                    // cout << rels[rel]->cols[col][midresults[0]->cols[j][k]] << endl;
+                    sum += rels[rel]->cols[col][midresults[0]->cols[j][k]];
+                }
+                cout << "--------------------------------------------" << endl;
+                cout << "sum = " << sum << endl;
+            }
+        }
+    }
+}
+
 //execute using rhj and create new midresult object
 void none_of_two_in_midresults(SQLquery* query,int index,relation** rels,vector<midResult*> &midresults){
     int r0=query->predicates[index][0];
@@ -485,5 +507,5 @@ void categoriser(SQLquery* query,relation **rels){
         query->predicates.erase(query->predicates.begin()+index);
         scoretable.clear();
     }
-        
+    generateResults(query,rels,midresults);
 }
