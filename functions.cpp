@@ -13,7 +13,7 @@ void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresu
                 cout << "j = " << j << endl;
                 sum=0;
                 for(int k=0;k<midresults[0]->colSize;k++){
-                    // cout << rels[rel]->cols[col][midresults[0]->cols[j][k]] << endl;
+                    cout << rels[rel]->cols[col][midresults[0]->cols[j][k]] << endl;
                     sum += rels[rel]->cols[col][midresults[0]->cols[j][k]];
                 }
                 cout << "--------------------------------------------" << endl;
@@ -452,20 +452,16 @@ void diffrelationoneonmidresult(SQLquery* query,int index,relation **rels,vector
         tempresults[g]=(int*)malloc(result->tupleCount*sizeof(int));
     int counter=0;
     listnode *temp = result->head;
-    int sum=0,limit;
-    while(temp!=NULL){
-        sum+=bufsize/sizeof(result);
-        limit = bufsize/sizeof(result);
-        if(sum > result->tupleCount){
-            limit = result->tupleCount % (bufsize/sizeof(result));
-        }
-        for(int i=0;i<limit;i++){
+    for(int i=0;i<midresults[midresultindex]->colSize;i++){
+        if(midresults[midresultindex]->cols[midresultrel][i]==temp->tuples->rowId1){
             for(int g=0;g<midresults[midresultindex]->cols.size();g++)
-                tempresults[g][counter]=midresults[midresultindex]->cols[g][temp->tuples[i].rowId1];
-            tempresults[midresults[midresultindex]->cols.size()][counter]=temp->tuples[i].rowId2;
+                tempresults[g][counter]=midresults[midresultindex]->cols[g][i];
+            tempresults[midresults[midresultindex]->cols.size()][counter]=temp->tuples->rowId2;
             counter++;
+            if(temp->next==NULL)
+                break;
+            temp=temp->next;
         }
-        temp = temp->next;
     }
     midresults[midresultindex]->colSize=counter;
     for(int g=0;g<midresults[midresultindex]->cols.size();g++){
