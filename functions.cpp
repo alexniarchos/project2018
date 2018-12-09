@@ -2,22 +2,25 @@
 #include "join.h"
 
 void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresults){
-    int rel,col,sum=0;
+    cout << "Generating results..." << endl;
+    int rel,col,sum=0,count=0;
     for(int i=0;i<query->views.size();i++){
         rel = query->views[i][0];
         col = query->views[i][1];
         cout << rel << "." << col << endl;
+        cout << "midresults colsize = " << midresults[0]->colSize << endl;
         for(int j=0;j<midresults[0]->cols.size();j++){
             if(rel == midresults[0]->relId[j]){
-                cout << "rel: " << rel << endl;
-                cout << "j = " << j << endl;
+                cout << "position of rel in midresult = " << j << endl;
                 sum=0;
+                count=0;
                 for(int k=0;k<midresults[0]->colSize;k++){
-                    cout << rels[rel]->cols[col][midresults[0]->cols[j][k]] << endl;
+                    // cout << rels[rel]->cols[col][midresults[0]->cols[j][k]] << endl;
                     sum += rels[rel]->cols[col][midresults[0]->cols[j][k]];
+                    count ++;
                 }
+                cout << "sum = " << sum << " count = " << count << endl;
                 cout << "--------------------------------------------" << endl;
-                cout << "sum = " << sum << endl;
             }
         }
     }
@@ -475,7 +478,7 @@ void diffrelationoneonmidresult(SQLquery* query,int index,relation **rels,vector
 
 void differentrelation(SQLquery* query,relation **rels,int index,vector<int> scoretable,vector<midResult*> &midresults){
     int ret=checkcases(query,index,scoretable,midresults);
-    cout << "Query: " << query->predicates[index][0] << "." << query->predicates[index][1] << query->predicates[index][2] << query->predicates[index][3] << "." << query->predicates[index][4] << endl;
+    cout << "Query: " << query->predicates[index][0] << "." << query->predicates[index][1] << " = " << query->predicates[index][3] << "." << query->predicates[index][4] << endl;
     cout << "ret = " << ret << endl;
     if(ret==1){//2.1)none of 2 are in mid results
         //execute using rhj and build midresult object
@@ -495,15 +498,24 @@ void differentrelation(SQLquery* query,relation **rels,int index,vector<int> sco
 void categoriser(SQLquery* query,relation **rels){
     vector<midResult*> midresults;
     executefilters(query,rels,midresults);
-    cout << "midres size = " << midresults.size() << endl;
+    cout << "midresults size after filters = " << midresults.size() << " num of columns = " << midresults[0]->cols.size() << " num of entries = " << midresults[0]->colSize << endl;
+    cout << "RelId = ";
+    for(int i=0;i<midresults[0]->relId.size();i++){
+        cout << midresults[0]->relId[i] << " ";
+    }
+    cout << endl;
     int numofqueries=query->predicates.size();
     vector<int> scoretable;
     for(int i=0;i<numofqueries;i++){
         int index=sortpredicates(query,midresults,scoretable);
-        if(query->predicates[index][0]==query->predicates[index][3]) //1)are at the same relation
+        if(query->predicates[index][0]==query->predicates[index][3]){ //1)are at the same relation
+            cout << "Same" << endl;
             samerelation(query,rels,index,scoretable,midresults);  
-        else   //2)belong to different relations
+        }
+        else{   //2)belong to different relations
+            cout << "Different" << endl;
             differentrelation(query,rels,index,scoretable,midresults);
+        }
         query->predicates.erase(query->predicates.begin()+index);
         scoretable.clear();
     }
