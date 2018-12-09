@@ -504,12 +504,14 @@ void differentrelation(SQLquery* query,relation **rels,int index,vector<int> sco
 void categoriser(SQLquery* query,relation **rels){
     vector<midResult*> midresults;
     executefilters(query,rels,midresults);
-    cout << "midresults size after filters = " << midresults.size() << " num of columns = " << midresults[0]->cols.size() << " num of entries = " << midresults[0]->colSize << endl;
-    cout << "RelId = ";
-    for(int i=0;i<midresults[0]->relId.size();i++){
-        cout << midresults[0]->relId[i] << " ";
+    if(midresults.size()!=0){
+        cout << "midresults size after filters = " << midresults.size() << " num of columns = " << midresults[0]->cols.size() << " num of entries = " << midresults[0]->colSize << endl;
+        cout << "RelId = ";
+        for(int i=0;i<midresults[0]->relId.size();i++){
+            cout << midresults[0]->relId[i] << " ";
+        }
+        cout << endl;
     }
-    cout << endl;
     int numofqueries=query->predicates.size();
     vector<int> scoretable;
     for(int i=0;i<numofqueries;i++){
