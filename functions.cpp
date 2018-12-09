@@ -333,7 +333,7 @@ void scansamerel(SQLquery* query,int index,relation **rels,vector<midResult*> &m
     int* tempresults=(int*)malloc(rels[rel_index]->numofentries*sizeof(int));
     int counter=0;
     for(int i=0;i<rels[rel_index]->numofentries;i++){
-        if(rels[rel_index]->cols[col1]==rels[rel_index]->cols[col2])
+        if(rels[rel_index]->cols[col1][i]==rels[rel_index]->cols[col2][i])
         {
             tempresults[counter]=i;
             counter++;
