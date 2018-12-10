@@ -1,10 +1,13 @@
 #include "functions.h"
 #include "join.h"
+#include <fstream>
 
 void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresults){
     cout << "Generating results..." << endl;
     int rel,col,count=0;
     uint64_t sum=0;
+    ofstream output; 
+    output.open("output",std::ofstream::out | std::ofstream::app);
     for(int i=0;i<query->views.size();i++){
         rel = query->views[i][0];
         col = query->views[i][1];
@@ -21,10 +24,18 @@ void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresu
                     count ++;
                 }
                 cout << "sum = " << sum << " count = " << count << endl;
+                if(sum == 0){
+                    output << "NULL" << " ";
+                }
+                else{
+                    output << sum << " ";
+                }
                 cout << "--------------------------------------------" << endl;
             }
         }
     }
+    output << endl;
+    output.close();
 }
 
 //execute using rhj and create new midresult object

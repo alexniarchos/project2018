@@ -11,8 +11,10 @@ int main(void){
     char* line=NULL;
     size_t len=0;
     while(getline(&line, &len, stdin) != -1){
-        if(line[0]=='F')
-            break;
+        if(line[0]=='F'){
+            // break;
+            continue;
+        }
         SQLquery* query=new SQLquery();
         query->parser(line);
         categoriser(query,rels);
