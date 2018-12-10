@@ -8,17 +8,26 @@ int main(void){
         numofbuckets*=2;
     }
     rels = init_relations(&numofrels);
-    char* line=NULL;
-    size_t len=0;
-    while(getline(&line, &len, stdin) != -1){
-        if(line[0]=='F'){
-            // break;
-            continue;
+    while(1){
+        char* line=NULL;
+        size_t len=0;
+        vector<string*> results;
+        while(getline(&line, &len, stdin) != -1){
+            if(line[0]=='F')
+                break;
+            if(line[0]=='E'){
+                free(line);
+                return 1;
+            }
+            SQLquery* query=new SQLquery();
+            query->parser(line);
+            categoriser(query,rels,results);
+            delete(query);
         }
-        SQLquery* query=new SQLquery();
-        query->parser(line);
-        categoriser(query,rels);
-        delete(query);
-    }       
-    free(line);
+        for(int i=0;i<results.size();i++){
+            cout<<*results[i];
+            delete results[i];
+        }
+    }
+    
 }

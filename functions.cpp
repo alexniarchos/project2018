@@ -1,13 +1,13 @@
 #include "functions.h"
 #include "join.h"
 #include <fstream>
+#include <string>
 
-void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresults){
+void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresults,vector<string*> &results){
     cout << "Generating results..." << endl;
     int rel,col,count=0;
     uint64_t sum=0;
-    ofstream output; 
-    output.open("output",std::ofstream::out | std::ofstream::app);
+    string* output=new string();
     for(int i=0;i<query->views.size();i++){
         rel = query->views[i][0];
         col = query->views[i][1];
@@ -25,17 +25,19 @@ void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresu
                 }
                 cout << "sum = " << sum << " count = " << count << endl;
                 if(sum == 0){
-                    output << "NULL" << " ";
+                    output->append("NULL ");
                 }
                 else{
-                    output << sum << " ";
+                    char* csum=(char*)malloc(32*sizeof(char));
+                    sprintf(csum,"%lu ",sum);
+                    output->append(csum);
                 }
                 cout << "--------------------------------------------" << endl;
             }
         }
     }
-    output << endl;
-    output.close();
+    output->append("\n");
+    results.push_back(output);
 }
 
 //execute using rhj and create new midresult object
@@ -512,7 +514,7 @@ void differentrelation(SQLquery* query,relation **rels,int index,vector<int> sco
     }
 }
 
-void categoriser(SQLquery* query,relation **rels){
+void categoriser(SQLquery* query,relation **rels,vector<string*> &results){
     vector<midResult*> midresults;
     executefilters(query,rels,midresults);
     if(midresults.size()!=0){
@@ -538,5 +540,5 @@ void categoriser(SQLquery* query,relation **rels){
         query->predicates.erase(query->predicates.begin()+index);
         scoretable.clear();
     }
-    generateResults(query,rels,midresults);
+    generateResults(query,rels,midresults,results);
 }

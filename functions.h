@@ -11,8 +11,9 @@
 #include <fcntl.h>
 #include "parser.h"
 #include "join.h"
+#include <string>
 
-void categoriser(SQLquery* query,relation **rels);
+void categoriser(SQLquery* query,relation **rels,vector<string*> &results);
 int checkfilter(SQLquery* query);
 void none_of_two_in_midresults(SQLquery* query,int index,relation** rels,vector<midResult*> &midresults);
 void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<midResult*> &midresults);
