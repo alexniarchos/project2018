@@ -17,7 +17,7 @@ using namespace std;
 
 #define n_last_digits 3 //number of last digits for hash function 1
 #define divisor 13 //hash function 2 mod value
-#define bufsize 40 //size of bytes for each listnode tuple array
+#define bufsize 1024*1024 //size of bytes for each listnode tuple array
 
 // globals
 extern int numofbuckets;
