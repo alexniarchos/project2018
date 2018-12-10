@@ -25,12 +25,17 @@ int main(void){
                 free(query->views[i]);
             delete(query);
         }
-        if(ret==-1)
-            break;
+        free(line);
         for(int i=0;i<results.size();i++){
             cout<<*results[i];
             delete results[i];
         }
+        if(ret==-1)
+            break;
     }
-    
+    for(int i=0;i<numofrels;i++){
+        free(rels[i]->cols);
+        free(rels[i]);
+    }
+    free(rels);
 }

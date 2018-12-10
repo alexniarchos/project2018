@@ -51,11 +51,13 @@ void SQLquery::parsepredicates(char* stringpredicates){
             filterflag=1;
         
         if(filterflag){
-            int* entry=new int[5]{relations[r1],c1,symbol,r2,-1};
+            int* entry=(int*)malloc(5*sizeof(int));
+            entry[0]=relations[r1]; entry[1]=c1; entry[2]=symbol; entry[3]=r2; entry[4]=-1;
             predicates.push_back(entry);
         }
         else{
-            int* entry=new int[5]{relations[r1],c1,symbol,relations[r2],c2};
+            int* entry=(int*)malloc(5*sizeof(int));
+            entry[0]=relations[r1]; entry[1]=c1; entry[2]=symbol; entry[3]=relations[r2]; entry[4]=c2;
             predicates.push_back(entry);
         }
         free(csymbol);
@@ -70,7 +72,8 @@ void SQLquery::parseviews(char* stringviews){
         sscanf(temp,"%d",&r);
         temp=strtok_r(nextentry," \n",&nextentry);
         sscanf(temp,"%d",&c);
-        int* entry=new int[2]{relations[r],c};
+        int* entry=(int*)malloc(2*sizeof(int));
+        entry[0]=relations[r];entry[1]=c;
         views.push_back(entry);
 
     }

@@ -31,6 +31,7 @@ void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresu
                     char* csum=(char*)malloc(32*sizeof(char));
                     sprintf(csum,"%lu ",sum);
                     output->append(csum);
+                    free(csum);
                 }
                 cout << "--------------------------------------------" << endl;
             }
@@ -260,6 +261,7 @@ void executefilters(SQLquery* query,relation **rels,vector<midResult*> &midresul
             tempmidResult->cols.push_back(tempresults);
             midresults.push_back(tempmidResult);
         }
+        free(query->predicates[index]);
         query->predicates.erase(query->predicates.begin()+index);
     }
 }
@@ -382,6 +384,7 @@ void scansamemidresults(SQLquery* query,int index,relation **rels,vector<midResu
                     free(midresults[i]->cols[g]);
                     midresults[i]->cols[g]=tempresults[g];
                 }
+                free(tempresults);
                 return;
             }
         }
@@ -432,6 +435,7 @@ void diffrelationsamemidresult(SQLquery* query,int index,relation **rels,vector<
         free(midresults[midresultindex]->cols[g]);
         midresults[midresultindex]->cols[g]=tempresults[g];
     }
+    free(tempresults);
 }
 
 void diffrelationoneonmidresult(SQLquery* query,int index,relation **rels,vector<midResult*> &midresults){
@@ -465,6 +469,7 @@ void diffrelationoneonmidresult(SQLquery* query,int index,relation **rels,vector
         rhjinput[i]=rels[relinmidresult]->cols[colinmidresult][midresults[midresultindex]->cols[midresultrel][i]];
     list *result=NULL;
     result=RadixHashJoin(rhjinput,midresults[midresultindex]->colSize,rels[relnotinmidresult]->cols[colnotinmidresult],rels[relnotinmidresult]->numofentries);
+    free(rhjinput);
     int** tempresults=(int**)malloc((midresults[midresultindex]->cols.size()+1)*sizeof(int*));
     for(int g=0;g<(midresults[midresultindex]->cols.size()+1);g++)
         tempresults[g]=(int*)malloc(result->tupleCount*sizeof(int));
@@ -493,6 +498,8 @@ void diffrelationoneonmidresult(SQLquery* query,int index,relation **rels,vector
     int size=midresults[midresultindex]->cols.size();
     midresults[midresultindex]->cols.push_back(tempresults[size]);
     midresults[midresultindex]->relId.push_back(relnotinmidresult);
+    free(tempresults);
+    delete result;
 }
 
 void differentrelation(SQLquery* query,relation **rels,int index,vector<int> scoretable,vector<midResult*> &midresults){
@@ -537,11 +544,14 @@ void categoriser(SQLquery* query,relation **rels,vector<string*> &results){
             cout << "Different" << endl;
             differentrelation(query,rels,index,scoretable,midresults);
         }
+        free(query->predicates[index]);
         query->predicates.erase(query->predicates.begin()+index);
         scoretable.clear();
     }
     generateResults(query,rels,midresults,results);
-    for(int i=0;i<midresults.size();i++)
+    for(int i=0;i<midresults.size();i++){
         for(int j=0;j<midresults[i]->cols.size();j++)
             free(midresults[i]->cols[j]);
+        delete midresults[i];
+    }
 }
