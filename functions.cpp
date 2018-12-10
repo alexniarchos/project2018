@@ -541,4 +541,7 @@ void categoriser(SQLquery* query,relation **rels,vector<string*> &results){
         scoretable.clear();
     }
     generateResults(query,rels,midresults,results);
+    for(int i=0;i<midresults.size();i++)
+        for(int j=0;j<midresults[i]->cols.size();j++)
+            free(midresults[i]->cols[j]);
 }

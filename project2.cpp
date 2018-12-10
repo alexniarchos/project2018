@@ -22,6 +22,10 @@ int main(void){
             SQLquery* query=new SQLquery();
             query->parser(line);
             categoriser(query,rels,results);
+            for(int i=0;i<query->predicates.size();i++)
+                free(query->predicates[i]);
+            for(int i=0;i<query->views.size();i++)
+                free(query->views[i]);
             delete(query);
         }
         for(int i=0;i<results.size();i++){
