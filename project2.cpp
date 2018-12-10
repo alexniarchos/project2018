@@ -12,13 +12,10 @@ int main(void){
         char* line=NULL;
         size_t len=0;
         vector<string*> results;
-        while(getline(&line, &len, stdin) != -1){
+        int ret;
+        while((ret=getline(&line, &len, stdin)) != -1){
             if(line[0]=='F')
                 break;
-            if(line[0]=='E'){
-                free(line);
-                return 1;
-            }
             SQLquery* query=new SQLquery();
             query->parser(line);
             categoriser(query,rels,results);
@@ -28,6 +25,8 @@ int main(void){
                 free(query->views[i]);
             delete(query);
         }
+        if(ret==-1)
+            break;
         for(int i=0;i<results.size();i++){
             cout<<*results[i];
             delete results[i];

@@ -12,4 +12,4 @@ parser.o: parser.cpp parser.h
 project2.o: project2.cpp functions.h
 	$(CC) $(CPPFLAGS) -c project2.cpp
 clean:
-	rm *.o
+	rm *.o output
