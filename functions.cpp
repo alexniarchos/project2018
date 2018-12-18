@@ -8,6 +8,8 @@ void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresu
     int rel,col,count=0;
     uint64_t sum=0;
     string* output=new string();
+    ofstream outfile; 
+    outfile.open("output",std::ofstream::out | std::ofstream::app);
     for(int i=0;i<query->views.size();i++){
         rel = query->views[i][0];
         col = query->views[i][1];
@@ -39,6 +41,7 @@ void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresu
     }
     output->append("\n");
     results.push_back(output);
+    outfile << output->c_str();
 }
 
 //execute using rhj and create new midresult object
