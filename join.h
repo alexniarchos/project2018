@@ -60,9 +60,9 @@ class listnode{
 
 class list{
     public:
-
-    int tupleCount;
-    listnode *head=NULL;
+        int tupleCount;
+        listnode *head=NULL;
+        listnode *tail=NULL;
 
     list(){tupleCount = 0;}
 

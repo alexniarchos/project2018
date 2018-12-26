@@ -18,20 +18,17 @@ void list::add(int num1,int num2){
     listnode *temp;
     if(head==NULL){//first add to list
         head = new listnode();
-        temp=head;
+        temp = head;
+        tail = head;
     }
-    else{
-        temp=head;
-        while(temp->next!=NULL){//get to the tail of the list
-            temp = temp->next;
-        }
-        if(tupleCount % (bufsize/sizeof(result)) == 0){//buffer is full create new one
-            temp->next = new listnode();
-            temp = temp->next;
+    else{   
+        if(tupleCount % (bufsize/sizeof(result)) == 0){//buffer is full create a new node
+            tail->next = new listnode();
+            tail = tail->next;
         }
     }
 
-    temp->add(tupleCount,num1,num2);
+    tail->add(tupleCount,num1,num2);
     tupleCount++;
 }
 

@@ -22,7 +22,7 @@ void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresu
                 count=0;
                 for(int k=0;k<midresults[0]->colSize;k++){
                     // cout << rels[rel]->cols[col][midresults[0]->cols[j][k]] << endl;
-                    sum += rels[rel]->cols[col][midresults[0]->cols[j][k]];
+                    sum += rels[query->relations[rel]]->cols[col][midresults[0]->cols[j][k]];
                     count ++;
                 }
                 cout << "sum = " << sum << " count = " << count << endl;
@@ -50,8 +50,11 @@ void none_of_two_in_midresults(SQLquery* query,int index,relation** rels,vector<
     int c0=query->predicates[index][1];
     int r1=query->predicates[index][3];
     int c1=query->predicates[index][4];
+
+    int rels_index0 = query->relations[r0];
+    int rels_index1 = query->relations[r1];
     list *result=NULL;
-    result = RadixHashJoin(rels[r0]->cols[c0],rels[r0]->numofentries,rels[r1]->cols[c1],rels[r1]->numofentries);
+    result = RadixHashJoin(rels[rels_index0]->cols[c0],rels[rels_index0]->numofentries,rels[rels_index1]->cols[c1],rels[rels_index1]->numofentries);
     midResult *midres = new midResult();
     midres->cols.push_back((int*)malloc(result->tupleCount*sizeof(int)));
     midres->cols.push_back((int*)malloc(result->tupleCount*sizeof(int)));
@@ -193,6 +196,7 @@ void executefilters(SQLquery* query,relation **rels,vector<midResult*> &midresul
     int index;
     while((index=checkfilter(query))!=-1){
         int rel_index=query->predicates[index][0];
+        int rels_index = query->relations[rel_index];
         int col_index=query->predicates[index][1];
         if(checkmidresults(rel_index,midresults)){
             for(int i=0;i<midresults.size();i++){
@@ -202,7 +206,7 @@ void executefilters(SQLquery* query,relation **rels,vector<midResult*> &midresul
                         int counter=0;
                         if(query->predicates[index][2]==0){
                             for(int in=0;in<midresults[i]->colSize;in++){
-                                if(rels[rel_index]->cols[col_index][midresults[i]->cols[j][in]]==query->predicates[index][3]){
+                                if(rels[rels_index]->cols[col_index][midresults[i]->cols[j][in]]==query->predicates[index][3]){
                                     tempresults[counter]=midresults[i]->cols[j][in];
                                     counter++;
                                 }
@@ -210,7 +214,7 @@ void executefilters(SQLquery* query,relation **rels,vector<midResult*> &midresul
                         }
                         else if(query->predicates[index][2]==1){
                             for(int in=0;in<midresults[i]->colSize;in++){
-                                if(rels[rel_index]->cols[col_index][midresults[i]->cols[j][in]]>query->predicates[index][3]){
+                                if(rels[rels_index]->cols[col_index][midresults[i]->cols[j][in]]>query->predicates[index][3]){
                                     tempresults[counter]=midresults[i]->cols[j][in];
                                     counter++;
                                 }
@@ -218,7 +222,7 @@ void executefilters(SQLquery* query,relation **rels,vector<midResult*> &midresul
                         }
                         else{
                             for(int in=0;in<midresults[i]->colSize;in++){
-                                if(rels[rel_index]->cols[col_index][midresults[i]->cols[j][in]]<query->predicates[index][3]){
+                                if(rels[rels_index]->cols[col_index][midresults[i]->cols[j][in]]<query->predicates[index][3]){
                                     tempresults[counter]=midresults[i]->cols[j][in];
                                     counter++;
                                 }
@@ -232,27 +236,27 @@ void executefilters(SQLquery* query,relation **rels,vector<midResult*> &midresul
             }
         }
         else{
-            int* tempresults=(int*)malloc(rels[rel_index]->numofentries*sizeof(int));
+            int* tempresults=(int*)malloc(rels[rels_index]->numofentries*sizeof(int));
             int counter=0;
             if(query->predicates[index][2]==0){
-                for(int i=0;i<rels[rel_index]->numofentries;i++){
-                    if(rels[rel_index]->cols[col_index][i]==query->predicates[index][3]){
+                for(int i=0;i<rels[rels_index]->numofentries;i++){
+                    if(rels[rels_index]->cols[col_index][i]==query->predicates[index][3]){
                         tempresults[counter]=i;
                         counter++;
                     }
                 }
             }
             else if(query->predicates[index][2]==1){
-                for(int i=0;i<rels[rel_index]->numofentries;i++){
-                    if(rels[rel_index]->cols[col_index][i]>query->predicates[index][3]){
+                for(int i=0;i<rels[rels_index]->numofentries;i++){
+                    if(rels[rels_index]->cols[col_index][i]>query->predicates[index][3]){
                         tempresults[counter]=i;
                         counter++;
                     }
                 }
             }
             else{
-                for(int i=0;i<rels[rel_index]->numofentries;i++){
-                    if(rels[rel_index]->cols[col_index][i]<query->predicates[index][3]){
+                for(int i=0;i<rels[rels_index]->numofentries;i++){
+                    if(rels[rels_index]->cols[col_index][i]<query->predicates[index][3]){
                         tempresults[counter]=i;
                         counter++;
                     }
@@ -348,10 +352,10 @@ void scansamerel(SQLquery* query,int index,relation **rels,vector<midResult*> &m
     int rel_index=query->predicates[index][0];
     int col1=query->predicates[index][1];
     int col2=query->predicates[index][4];
-    int* tempresults=(int*)malloc(rels[rel_index]->numofentries*sizeof(int));
+    int* tempresults=(int*)malloc(rels[query->relations[rel_index]]->numofentries*sizeof(int));
     int counter=0;
-    for(int i=0;i<rels[rel_index]->numofentries;i++){
-        if(rels[rel_index]->cols[col1][i]==rels[rel_index]->cols[col2][i])
+    for(int i=0;i<rels[query->relations[rel_index]]->numofentries;i++){
+        if(rels[query->relations[rel_index]]->cols[col1][i]==rels[query->relations[rel_index]]->cols[col2][i])
         {
             tempresults[counter]=i;
             counter++;
@@ -376,7 +380,7 @@ void scansamemidresults(SQLquery* query,int index,relation **rels,vector<midResu
                     tempresults[g]=(int*)malloc(midresults[i]->colSize*sizeof(int));
                 int counter=0;
                 for(int in=0;in<midresults[i]->colSize;in++){
-                    if(rels[rel_index]->cols[col1][midresults[i]->cols[j][in]]==rels[rel_index]->cols[col2][midresults[i]->cols[j][in]]){
+                    if(rels[query->relations[rel_index]]->cols[col1][midresults[i]->cols[j][in]]==rels[query->relations[rel_index]]->cols[col2][midresults[i]->cols[j][in]]){
                         for(int g=0;g<midresults[i]->cols.size();g++)
                             tempresults[g][counter]=midresults[i]->cols[g][in];
                         counter++;
@@ -396,6 +400,7 @@ void scansamemidresults(SQLquery* query,int index,relation **rels,vector<midResu
 
 void samerelation(SQLquery* query,relation **rels,int index,vector<int> scoretable,vector<midResult*> &midresults){
     int ret=checkcases(query,index,scoretable,midresults);
+    cout << "Query: " << query->predicates[index][0] << "." << query->predicates[index][1] << " = " << query->predicates[index][3] << "." << query->predicates[index][4] << endl;
     cout << "same ret = " << ret << endl;
     if(ret==1)
         scansamerel(query,index,rels,midresults);
@@ -427,7 +432,7 @@ void diffrelationsamemidresult(SQLquery* query,int index,relation **rels,vector<
         for(int g=0;g<midresults[midresultindex]->cols.size();g++)
             tempresults[g]=(int*)malloc(midresults[midresultindex]->colSize*sizeof(int));
     for(int i=0;i<midresults[midresultindex]->colSize;i++){
-        if(rels[rel1]->cols[col1][midresults[midresultindex]->cols[midresultrel1][i]]==rels[rel2]->cols[col2][midresults[midresultindex]->cols[midresultrel2][i]]){
+        if(rels[query->relations[rel1]]->cols[col1][midresults[midresultindex]->cols[midresultrel1][i]]==rels[query->relations[rel2]]->cols[col2][midresults[midresultindex]->cols[midresultrel2][i]]){
             for(int g=0;g<midresults[midresultindex]->cols.size();g++)
                 tempresults[g][counter]=midresults[midresultindex]->cols[g][i];
             counter++;
@@ -469,9 +474,9 @@ void diffrelationoneonmidresult(SQLquery* query,int index,relation **rels,vector
     }
     uint64_t* rhjinput=(uint64_t*)malloc(midresults[midresultindex]->colSize*sizeof(uint64_t));
     for(int i=0;i<midresults[midresultindex]->colSize;i++)
-        rhjinput[i]=rels[relinmidresult]->cols[colinmidresult][midresults[midresultindex]->cols[midresultrel][i]];
+        rhjinput[i]=rels[query->relations[relinmidresult]]->cols[colinmidresult][midresults[midresultindex]->cols[midresultrel][i]];
     list *result=NULL;
-    result=RadixHashJoin(rhjinput,midresults[midresultindex]->colSize,rels[relnotinmidresult]->cols[colnotinmidresult],rels[relnotinmidresult]->numofentries);
+    result=RadixHashJoin(rhjinput,midresults[midresultindex]->colSize,rels[query->relations[relnotinmidresult]]->cols[colnotinmidresult],rels[query->relations[relnotinmidresult]]->numofentries);
     free(rhjinput);
     int** tempresults=(int**)malloc((midresults[midresultindex]->cols.size()+1)*sizeof(int*));
     for(int g=0;g<(midresults[midresultindex]->cols.size()+1);g++)
