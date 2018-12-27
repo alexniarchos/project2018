@@ -81,7 +81,7 @@ void none_of_two_in_midresults(SQLquery* query,int index,relation** rels,vector<
     midresults.push_back(midres);
 }
 
-//execute using scan and merge the midresults objects
+//execute using RHJ and merge the midresults objects
 void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<midResult*> &midresults){
     int r0=query->predicates[index][0];
     int c0=query->predicates[index][1];
@@ -107,11 +107,11 @@ void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<mi
     uint64_t *temp_r0 = (uint64_t*)malloc(midresults[midresPos_r0]->colSize*sizeof(uint64_t));
     uint64_t *temp_r1 = (uint64_t*)malloc(midresults[midresPos_r1]->colSize*sizeof(uint64_t));
     for(int i=0;i<midresults[midresPos_r0]->colSize;i++){
-        temp_r0[i] = rels[r0]->cols[c0][midresults[midresPos_r0]->cols[relPos_r0][i]];
+        temp_r0[i] = rels[query->relations[r0]]->cols[c0][midresults[midresPos_r0]->cols[relPos_r0][i]];
         // cout << "temp_r0[" << i << "] = " << temp_r0[i] << endl;
     }
     for(int i=0;i<midresults[midresPos_r1]->colSize;i++){
-        temp_r1[i] = rels[r1]->cols[c1][midresults[midresPos_r1]->cols[relPos_r1][i]];
+        temp_r1[i] = rels[query->relations[r1]]->cols[c1][midresults[midresPos_r1]->cols[relPos_r1][i]];
     }
     // join
     result = RadixHashJoin(temp_r0,midresults[midresPos_r0]->colSize,temp_r1,midresults[midresPos_r1]->colSize);
@@ -310,42 +310,64 @@ int sortpredicates(SQLquery* query,vector<midResult*> midresults,vector<int> &sc
     return oneflag;
 }
 
-int checkcases(SQLquery* query,int index,vector<int> scoretable,vector<midResult*> midresults){
-    if(scoretable[index]==0)
-        return 1;
-    else if(scoretable[index]==1)
-        return 2;
-    else if(scoretable[index]==2){
-        int jkeeper1=-1;
-        int jkeeper2=-1;
-        for(int c=0;c<2;c++){
-            int flag=0;
-            for(int j=0;j<midresults.size();j++){
-                for(int z=0;z<midresults[j]->relId.size();z++){
-                    if(c==0){
-                        if(query->predicates[index][0]==midresults[j]->relId[z]){
-                            jkeeper1=j;
-                            flag=1;
-                            break;
-                        }
-                    }
-                    else{
-                        if(query->predicates[index][3]==midresults[j]->relId[z]){
-                            jkeeper2=j;
-                            flag=1;
-                            break;
-                        }
+Case diffrelCases(SQLquery* query,int index,vector<midResult*> midresults){
+    int firstPos=-1;
+    int secondPos=-1;
+    bool foundFirstRel=false,foundSecondRel=false,flag=false;
+    for(int c=0;c<2;c++){
+        flag = false;
+        for(int j=0;j<midresults.size();j++){
+            for(int z=0;z<midresults[j]->relId.size();z++){
+                // first relation
+                if(c==0){
+                    if(query->predicates[index][0]==midresults[j]->relId[z]){
+                        firstPos = j;
+                        foundFirstRel = true;
+                        flag = true;
+                        break;
                     }
                 }
-                if(flag)
-                    break;
+                // second relation
+                else{
+                    if(query->predicates[index][3]==midresults[j]->relId[z]){
+                        secondPos = j;
+                        foundSecondRel = true;
+                        flag = true;
+                        break;
+                    }
+                }
+            }
+            if(flag)
+                break;
+        }
+    }
+    // found both in midresults
+    if(foundFirstRel && foundSecondRel){
+        if(firstPos == secondPos){
+            return BothInSameMidResult;
+        }
+        return BothInDiffMidResult;
+    }
+    // found only one
+    else if(foundFirstRel || foundSecondRel){
+        return OneInMidResult;
+    }
+    // found none
+    else{
+        return NoneInMidResults;
+    }
+}
+
+Case samerelCases(SQLquery* query,int index,vector<midResult*> &midresults){
+    // check if relation exists inside midresults
+    for(int i=0;i<midresults.size();i++){
+        for(int j=0;j < midresults[i]->relId.size();j++){
+            if(query->predicates[index][0] == midresults[i]->relId[j]){
+                return InMidResult;
             }
         }
-        if(jkeeper1==jkeeper2)
-            return 3;
-        else
-            return 4;
     }
+    return NotInMidResult;
 }
 
 void scansamerel(SQLquery* query,int index,relation **rels,vector<midResult*> &midresults){
@@ -398,15 +420,14 @@ void scansamemidresults(SQLquery* query,int index,relation **rels,vector<midResu
     }
 }
 
-void samerelation(SQLquery* query,relation **rels,int index,vector<int> scoretable,vector<midResult*> &midresults){
-    int ret=checkcases(query,index,scoretable,midresults);
+void samerelation(SQLquery* query,relation **rels,int index,vector<midResult*> &midresults){
+    Case ret=samerelCases(query,index,midresults);
     cout << "Query: " << query->predicates[index][0] << "." << query->predicates[index][1] << " = " << query->predicates[index][3] << "." << query->predicates[index][4] << endl;
     cout << "same ret = " << ret << endl;
-    if(ret==1)
+    if(ret == NotInMidResult)
         scansamerel(query,index,rels,midresults);
-    else if(ret==3)
+    else if(ret == InMidResult)
         scansamemidresults(query,index,rels,midresults);
-
 }
 
 void diffrelationsamemidresult(SQLquery* query,int index,relation **rels,vector<midResult*> &midresults){
@@ -510,22 +531,22 @@ void diffrelationoneonmidresult(SQLquery* query,int index,relation **rels,vector
     delete result;
 }
 
-void differentrelation(SQLquery* query,relation **rels,int index,vector<int> scoretable,vector<midResult*> &midresults){
-    int ret=checkcases(query,index,scoretable,midresults);
+void differentrelation(SQLquery* query,relation **rels,int index,vector<midResult*> &midresults){
+    Case ret=diffrelCases(query,index,midresults);
     cout << "Query: " << query->predicates[index][0] << "." << query->predicates[index][1] << " = " << query->predicates[index][3] << "." << query->predicates[index][4] << endl;
     cout << "ret = " << ret << endl;
-    if(ret==1){//2.1)none of 2 are in mid results
+    cout << "index = " << index << endl;
+    if(ret == NoneInMidResults){//2.1)none of 2 are in mid results
         //execute using rhj and build midresult object
         none_of_two_in_midresults(query,index,rels,midresults);
     }
-    else if(ret==2)//2.2)one of 2 belongs to midresults array of objects //execute using rhj and add the second relation column to the midresult object the other relation is
+    else if(ret == OneInMidResult)//2.2)one of 2 belongs to midresults array of objects //execute using rhj and add the second relation column to the midresult object the other relation is
         diffrelationoneonmidresult(query,index,rels,midresults);
-    else if(ret==3)//2 of 2 belong to the same midresult object scan
+    else if(ret == BothInSameMidResult)//2 of 2 belong to the same midresult object scan
         diffrelationsamemidresult(query,index,rels,midresults);
-    else if(ret==4){//2.4)2 of 2 belong to different midresult objects
+    else if(ret == BothInDiffMidResult){//2.4)2 of 2 belong to different midresult objects
         //execute using scan and merge the midresults objects
         both_in_diff_midresults(query,index,rels,midresults);
-        
     }
 }
 
@@ -541,20 +562,20 @@ void categoriser(SQLquery* query,relation **rels,vector<string*> &results){
         cout << endl;
     }
     int numofqueries=query->predicates.size();
-    vector<int> scoretable;
     for(int i=0;i<numofqueries;i++){
-        int index=sortpredicates(query,midresults,scoretable);
+        int index = i;
         if(query->predicates[index][0]==query->predicates[index][3]){ //1)are at the same relation
             cout << "Same" << endl;
-            samerelation(query,rels,index,scoretable,midresults);  
+            samerelation(query,rels,index,midresults);  
         }
         else{   //2)belong to different relations
             cout << "Different" << endl;
-            differentrelation(query,rels,index,scoretable,midresults);
+            differentrelation(query,rels,index,midresults);
         }
-        free(query->predicates[index]);
-        query->predicates.erase(query->predicates.begin()+index);
-        scoretable.clear();
+    }
+    for(int i=0; i<numofqueries; i++){
+        free(query->predicates[0]);
+        query->predicates.erase(query->predicates.begin());
     }
     generateResults(query,rels,midresults,results);
     for(int i=0;i<midresults.size();i++){
