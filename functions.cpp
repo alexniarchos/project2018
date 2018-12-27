@@ -2,6 +2,7 @@
 #include "join.h"
 #include <fstream>
 #include <string>
+#include <time.h>
 
 void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresults,vector<string*> &results){
     cout << "Generating results..." << endl;
@@ -497,7 +498,11 @@ void diffrelationoneonmidresult(SQLquery* query,int index,relation **rels,vector
     for(int i=0;i<midresults[midresultindex]->colSize;i++)
         rhjinput[i]=rels[query->relations[relinmidresult]]->cols[colinmidresult][midresults[midresultindex]->cols[midresultrel][i]];
     list *result=NULL;
+    time_t start,end;
+    time(&start);
     result=RadixHashJoin(rhjinput,midresults[midresultindex]->colSize,rels[query->relations[relnotinmidresult]]->cols[colnotinmidresult],rels[query->relations[relnotinmidresult]]->numofentries);
+    time(&end);
+    cout << "time spent by rhj: " << end-start << endl;
     free(rhjinput);
     int** tempresults=(int**)malloc((midresults[midresultindex]->cols.size()+1)*sizeof(int*));
     for(int g=0;g<(midresults[midresultindex]->cols.size()+1);g++)
@@ -548,6 +553,10 @@ void differentrelation(SQLquery* query,relation **rels,int index,vector<midResul
         //execute using scan and merge the midresults objects
         both_in_diff_midresults(query,index,rels,midresults);
     }
+}
+
+vector<int>* queryOptimiser(SQLquery* query){
+    vector<int> *predicateList = new vector<int>();
 }
 
 void categoriser(SQLquery* query,relation **rels,vector<string*> &results){

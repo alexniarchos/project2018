@@ -29,3 +29,11 @@ void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<mi
 int checkmidresults(int rel_index,vector<midResult*> &midresults);
 Case samerelCases(SQLquery* query,int index,vector<midResult*> &midresults);
 Case diffrelCases(SQLquery* query,int index,vector<midResult*> midresults);
+void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresults,vector<string*> &results);
+void executefilters(SQLquery* query,relation **rels,vector<midResult*> &midresults);
+void scansamerel(SQLquery* query,int index,relation **rels,vector<midResult*> &midresults);
+void scansamemidresults(SQLquery* query,int index,relation **rels,vector<midResult*> &midresults);
+void samerelation(SQLquery* query,relation **rels,int index,vector<midResult*> &midresults);
+void diffrelationsamemidresult(SQLquery* query,int index,relation **rels,vector<midResult*> &midresults);
+void diffrelationoneonmidresult(SQLquery* query,int index,relation **rels,vector<midResult*> &midresults);
+void differentrelation(SQLquery* query,relation **rels,int index,vector<midResult*> &midresults);

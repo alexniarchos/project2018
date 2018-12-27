@@ -1,4 +1,5 @@
 #include "join.h"
+#include <time.h>
 
 using namespace std;
 int numofbuckets;
@@ -173,19 +174,19 @@ void sort_hashtable(uint64_t *col,int numofentries,Tuple** hash,int** hist,int**
             (*psum)[i]=(*psum)[i-1]+(*hist)[i-1];
     }
 
+    // use secondary table to count how many of the items have been copied to sorted array
+    int *histCount=(int*)malloc(numofbuckets*sizeof(int));
+    for(int i=0;i<numofbuckets;i++)
+        histCount[i]=0;
+
     for(int i=0;i<numofentries;i++){
         uint64_t temp_binary=dec_to_bin(col[i]);
         int index=hashvalue(temp_binary,n_last_digits);
-        int j=0;
-        while(1){
-            if((*hash)[(*psum)[index]+j].key==-1){    
-                (*hash)[(*psum)[index]+j].key=i;
-                (*hash)[(*psum)[index]+j].payload=col[i];
-                break;
-            }
-            j++;
-        }
+        (*hash)[(*psum)[index]+histCount[index]].key=i;
+        (*hash)[(*psum)[index]+histCount[index]].payload=col[i];
+        histCount[index]++;
     }
+    free(histCount);
 }
 
 int hashfun2(int value){
@@ -225,8 +226,8 @@ void create_indexing(int numofentries,Tuple *table,int* hist, int** chain, int**
 
 list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket, int biggestTable){
     int h1,h2,chainVal,chainPos;
-    ofstream output;
-    output.open("output.csv");
+    // ofstream output;
+    // output.open("output.csv");
     list *l = new list();
     for(int i=0;i<numofentries;i++){
         h1 = hashvalue(dec_to_bin(A[i].payload),n_last_digits);
@@ -238,11 +239,11 @@ list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket, in
         while(1){
             if(B[chainPos].payload == A[i].payload){
                 if(biggestTable == 1){
-                    output << A[i].key << "," << B[chainPos].key << endl;
+                    // output << A[i].key << "," << B[chainPos].key << endl;
                     l->add(A[i].key,B[chainPos].key);
                 }
                 else if(biggestTable == 2){
-                    output << B[chainPos].key << "," << A[i].key << endl;
+                    // output << B[chainPos].key << "," << A[i].key << endl;
                     l->add(B[chainPos].key,A[i].key);
                 }
             }
@@ -252,7 +253,7 @@ list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket, in
             chainPos = chain[chainPos];
         }
     }
-    output.close();
+    // output.close();
     return l;
 }
 
@@ -267,7 +268,8 @@ list* RadixHashJoin(uint64_t* A, int A_size, uint64_t* B, int B_size){
     Tuple *A_Sorted,*B_Sorted;
     int *A_hist,*A_psum,*B_hist,*B_psum,*A_chain,*A_bucket,*B_chain,*B_bucket;
     list *l;
-    
+    time_t start,end;
+    start = time(NULL);
     // init arrays and sort
     A_Sorted = (Tuple*)malloc(A_size*sizeof(Tuple));
     for (int i=0;i<A_size;i++){
@@ -290,16 +292,29 @@ list* RadixHashJoin(uint64_t* A, int A_size, uint64_t* B, int B_size){
     B_psum=(int*)malloc(numofbuckets*sizeof(int));
 
     sort_hashtable(B,B_size,&B_Sorted,&B_hist,&B_psum);
-
+    end = time(NULL);
+    cout << "sorting: " << end-start << endl;
     // Create indexing to the array with the least amount of entries
     if(A_size < B_size){
+        start = time(NULL);
         create_indexing(A_size,A_Sorted,A_hist,&A_chain,&A_bucket);
+        end = time(NULL);
+        cout << "indexing: " << end-start << endl;
+        start = time(NULL);
         l = getResults(B_size,B_Sorted,A_Sorted,A_chain,A_bucket,2);
+        end = time(NULL);
+        cout << "joining: " << end-start << endl;
         free(A_chain);
         free(A_bucket);
     }else{
+        start = time(NULL);
         create_indexing(B_size,B_Sorted,B_hist,&B_chain,&B_bucket);
+        end = time(NULL);
+        cout << "indexing: " << end-start << endl;
+        start = time(NULL);
         l = getResults(A_size,A_Sorted,B_Sorted,B_chain,B_bucket,1);
+        end = time(NULL);
+        cout << "joining: " << end-start << endl;
         free(B_chain);
         free(B_bucket);
     }
