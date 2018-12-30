@@ -1,7 +1,10 @@
 #include "join.h"
 #include <time.h>
 
+#define N 49999991 //largest prime number below 50.000.000
+
 using namespace std;
+
 int numofbuckets;
 listnode::listnode(){
     next = NULL;
@@ -145,16 +148,58 @@ relation** init_relations(int *numofrels){
             cout << "relation file " << filenames[i].c_str() << " does not contain a valid header" << endl;
             throw;
         }
-        rels[i] = (relation*)malloc(sizeof(relation));
+        // rels[i] = (relation*)malloc(sizeof(relation));
+        rels[i] = new relation();
         rels[i]->numofentries=*(uint64_t*)(addr);
         addr+=sizeof(uint64_t);
         rels[i]->numofcols=*(uint64_t*)(addr);
         cout << filenames[i].c_str() << " entries: " << rels[i]->numofentries << " cols: " << rels[i]->numofcols << endl;
         addr+=sizeof(uint64_t);
         rels[i]->cols = (uint64_t**)malloc(rels[i]->numofcols*sizeof(uint64_t*));
+        rels[i]->colStats = (ColStats**)malloc(rels[i]->numofcols*sizeof(ColStats*));
         for (int j=0;j<rels[i]->numofcols;j++) {
             rels[i]->cols[j] = (uint64_t*)(addr);
             addr+=rels[i]->numofentries*sizeof(uint64_t);
+            // calculate stats for each collumn
+            rels[i]->colStats[j] = (ColStats*)malloc(sizeof(ColStats));
+            int max = rels[i]->cols[j][0], min = rels[i]->cols[j][0];
+            for(int k=0;k<rels[i]->numofentries;k++){
+                if(rels[i]->cols[j][k] > max){
+                    max = rels[i]->cols[j][k];
+                }
+                else if(rels[i]->cols[j][k] < min){
+                    min = rels[i]->cols[j][k];
+                }
+            }
+            rels[i]->colStats[j]->u = max;
+            rels[i]->colStats[j]->l = min;
+            rels[i]->colStats[j]->f = rels[i]->numofentries;
+            // create distinct values array to calculate distinct values
+            int distinctSize = max-min+1;
+            if(distinctSize > N){
+                distinctSize = N;
+            }
+            bool *distinctVal = (bool*)malloc(distinctSize*sizeof(bool));
+            // initialize array
+            for(int k=0;k<distinctSize;k++){
+                distinctVal[k] = false;
+            }
+            // if a value is found set position of the array to true
+            for(int k=0;k<rels[i]->numofentries;k++){
+                distinctVal[(rels[i]->cols[j][k] - min) % N] = true;
+            }
+            int counter=0;
+            for(int k=0;k<distinctSize;k++){
+                if(distinctVal[k] == true){
+                    counter++;
+                }
+            }
+            // update stats with distinct values
+            rels[i]->colStats[j]->d = counter;
+            // free distinct array
+            free(distinctVal);
+            // print stats
+            cout << "u = " << rels[i]->colStats[j]->u << " l = " << rels[i]->colStats[j]->l << " f = " << rels[i]->colStats[j]->f << " d = " << rels[i]->colStats[j]->d << endl;
         }
     }
     return rels;
@@ -293,28 +338,28 @@ list* RadixHashJoin(uint64_t* A, int A_size, uint64_t* B, int B_size){
 
     sort_hashtable(B,B_size,&B_Sorted,&B_hist,&B_psum);
     end = time(NULL);
-    cout << "sorting: " << end-start << endl;
+    cout << "\t\t\tsorting: \t" << end-start << endl;
     // Create indexing to the array with the least amount of entries
     if(A_size < B_size){
         start = time(NULL);
         create_indexing(A_size,A_Sorted,A_hist,&A_chain,&A_bucket);
         end = time(NULL);
-        cout << "indexing: " << end-start << endl;
+        cout << "\t\t\tindexing: \t" << end-start << endl;
         start = time(NULL);
         l = getResults(B_size,B_Sorted,A_Sorted,A_chain,A_bucket,2);
         end = time(NULL);
-        cout << "joining: " << end-start << endl;
+        cout << "\t\t\tjoining: \t" << end-start << endl;
         free(A_chain);
         free(A_bucket);
     }else{
         start = time(NULL);
         create_indexing(B_size,B_Sorted,B_hist,&B_chain,&B_bucket);
         end = time(NULL);
-        cout << "indexing: " << end-start << endl;
+        cout << "\t\t\tindexing: \t" << end-start << endl;
         start = time(NULL);
         l = getResults(A_size,A_Sorted,B_Sorted,B_chain,B_bucket,1);
         end = time(NULL);
-        cout << "joining: " << end-start << endl;
+        cout << "\t\t\tjoining: \t" << end-start << endl;
         free(B_chain);
         free(B_bucket);
     }

@@ -22,20 +22,29 @@ using namespace std;
 // globals
 extern int numofbuckets;
 
-struct Tuple {
+struct Tuple{
     int key;
     uint64_t payload;
 };
 
-struct result {
+struct result{
     int rowId1;
     int rowId2;
 };
 
-struct relation{
-    uint64_t **cols;
-    int numofcols;
-    int numofentries;
+struct ColStats{
+    int l; // minimum value of collumn
+    int u; // max value
+    int f; // number of entries
+    int d; // number of distinct values
+};
+
+class relation{
+    public: 
+        uint64_t **cols;
+        ColStats **colStats;
+        int numofcols;
+        int numofentries;
 };
 
 class listnode{

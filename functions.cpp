@@ -80,6 +80,7 @@ void none_of_two_in_midresults(SQLquery* query,int index,relation** rels,vector<
     midres->relId.push_back(r1);
     midres->colSize = result->tupleCount;
     midresults.push_back(midres);
+    delete result;
 }
 
 //execute using RHJ and merge the midresults objects
@@ -116,6 +117,9 @@ void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<mi
     }
     // join
     result = RadixHashJoin(temp_r0,midresults[midresPos_r0]->colSize,temp_r1,midresults[midresPos_r1]->colSize);
+    // free temp arrays
+    free(temp_r0);
+    free(temp_r1);
     // copy result into midResult object
     midResult *midres = new midResult();
     for(int j=0;j<midresults[midresPos_r0]->cols.size()+midresults[midresPos_r1]->cols.size();j++){
@@ -143,6 +147,8 @@ void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<mi
     }
     // update midres colsize and rel ids
     midres->colSize = result->tupleCount;
+    // free result
+    delete result;
     for(int i=0;i<midresults[midresPos_r0]->relId.size();i++){
         midres->relId.push_back(midresults[midresPos_r0]->relId[i]);
     }
@@ -154,6 +160,9 @@ void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<mi
         cout << "relid = " << midres->relId[i] << endl;
     }
     // delete old mid results and add the new one
+    for(int i=0;i<midresults[midresPos_r0]->cols.size();i++)
+        free(midresults[midresPos_r0]->cols[i]);
+    delete midresults[midresPos_r0];
     midresults.erase(midresults.begin()+midresPos_r0);
     // find second midres pos
     for(int i=0;i<midresults.size();i++){
@@ -163,17 +172,11 @@ void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<mi
             }
         }
     }
+    for(int i=0;i<midresults[midresPos_r1]->cols.size();i++)
+        free(midresults[midresPos_r1]->cols[i]);
+    delete midresults[midresPos_r1];
     midresults.erase(midresults.begin()+midresPos_r1);
     midresults.push_back(midres);
-    ofstream output;
-    output.open("output.csv");
-    for(int i=0;i<midres->colSize;i++){
-        for(int j=0;j<midres->cols.size();j++){
-            output << midres->cols[j][i] << ",";
-        }
-        output << endl;
-    }
-    output.close();
 }
 
 int checkfilter(SQLquery* query){
