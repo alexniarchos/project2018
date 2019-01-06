@@ -17,3 +17,10 @@ r5
 r4
 r3
 output.csv
+*.o
+output
+output.old
+small.result
+small.work
+testInput
+input
