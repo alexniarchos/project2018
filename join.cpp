@@ -8,64 +8,6 @@ using namespace std;
 
 int numofbuckets;
 
-listnode::listnode(){
-    next = NULL;
-    tuples = (result*)malloc(bufsize);
-    memset(tuples,0,bufsize);
-}
-
-void listnode::add(int tupleCount,int num1,int num2){
-    int index = tupleCount % (bufsize/sizeof(result));
-    tuples[index].rowId1 = num1;
-    tuples[index].rowId2 = num2;
-}
-
-void list::add(int num1,int num2){
-    listnode *temp;
-    if(head==NULL){//first add to list
-        head = new listnode();
-        temp = head;
-        tail = head;
-    }
-    else{   
-        if(tupleCount % (bufsize/sizeof(result)) == 0){//buffer is full create a new node
-            tail->next = new listnode();
-            tail = tail->next;
-        }
-    }
-
-    tail->add(tupleCount,num1,num2);
-    tupleCount++;
-}
-
-void list::print(){
-    cout << "Printing result list..." << endl;
-    int sum=0,limit;
-    listnode *temp = head;
-    while(temp!=NULL){
-        sum+=bufsize/sizeof(result);
-        limit = bufsize/sizeof(result);
-        if(sum > tupleCount){
-            limit = tupleCount % (bufsize/sizeof(result));
-        }
-        for(int i=0;i<limit;i++){
-            cout << temp->tuples[i].rowId1 << " , " << temp->tuples[i].rowId2 << endl;
-        }
-        temp = temp->next;
-        cout << "---end of buffer---" << endl;
-    }
-}
-
-list::~list(){
-    // free listnodes
-    listnode *temp = head,*next;
-    while(temp!=NULL){
-        next = temp->next;
-        delete temp;
-        temp = next;
-    }
-}
-
 uint64_t dec_to_bin(uint64_t decimal) {
     if (decimal == 0) 
         return 0;
@@ -336,36 +278,46 @@ void create_indexing(int numofentries,Tuple *table,int* hist, int** chain, int**
     }
 }
 
-list* getResults(int numofentries,Tuple *A, Tuple *B,int *chain, int *bucket, int biggestTable){
+list* getResults(int numofentries,Tuple *A,int *A_hist,Tuple *B,int *chain, int *bucket, int biggestTable){
     int h1,h2,chainVal,chainPos;
-    // ofstream output;
-    // output.open("output.csv");
     list *l = new list();
-    for(int i=0;i<numofentries;i++){
-        h1 = hashvalue(dec_to_bin(A[i].payload),n_last_digits);
-        h2 = hashfun2(A[i].payload);
-        chainPos = bucket[h1*divisor+h2];
-        if(chainPos == -1){
-            continue;
-        }
-        while(1){
-            if(B[chainPos].payload == A[i].payload){
-                if(biggestTable == 1){
-                    // output << A[i].key << "," << B[chainPos].key << endl;
-                    l->add(A[i].key,B[chainPos].key);
-                }
-                else if(biggestTable == 2){
-                    // output << B[chainPos].key << "," << A[i].key << endl;
-                    l->add(B[chainPos].key,A[i].key);
-                }
-            }
-            if(chain[chainPos] == -1){
-                break;
-            }
-            chainPos = chain[chainPos];
-        }
+    list *thread_lists[numofbuckets];
+    for(int i=0;i<numofbuckets;i++){
+        thread_lists[i] = new list();
     }
-    // output.close();
+
+    int start=0,end=0;
+    // lock
+    pthread_mutex_lock(&jobScheduler->queueLock);
+    for(int i=0;i<numofbuckets;i++){
+        start = end;
+        end += A_hist[i];
+        // cout << "numofentries: " << numofentries << " start: " << start << " end: " << end << endl;
+        jobScheduler->Schedule(new JoinJob(thread_lists[i],start,end,A,B,chain,bucket,biggestTable));
+    }
+    // signal
+    pthread_cond_signal(&jobScheduler->queueNotEmpty);
+    // unlock
+    pthread_mutex_unlock(&jobScheduler->queueLock);
+
+    jobScheduler->Barrier();
+
+    for(int i=0;i<numofbuckets;i++){
+        int sum=0,limit;
+        listnode *temp = thread_lists[i]->head;
+        while(temp!=NULL){
+            sum+=bufsize/sizeof(result);
+            limit = bufsize/sizeof(result);
+            if(sum > thread_lists[i]->tupleCount){
+                limit = thread_lists[i]->tupleCount % (bufsize/sizeof(result));
+            }
+            for(int i=0;i<limit;i++){
+                l->add(temp->tuples[i].rowId1,temp->tuples[i].rowId2);
+            }
+            temp = temp->next;
+        }
+        delete thread_lists[i];
+    }
     return l;
 }
 
@@ -413,7 +365,7 @@ list* RadixHashJoin(uint64_t* A, int A_size, uint64_t* B, int B_size){
         end = time(NULL);
         cout << "\t\t\tindexing: \t" << end-start << endl;
         start = time(NULL);
-        l = getResults(B_size,B_Sorted,A_Sorted,A_chain,A_bucket,2);
+        l = getResults(B_size,B_Sorted,B_hist,A_Sorted,A_chain,A_bucket,2);
         end = time(NULL);
         cout << "\t\t\tjoining: \t" << end-start << endl;
         free(A_chain);
@@ -424,7 +376,7 @@ list* RadixHashJoin(uint64_t* A, int A_size, uint64_t* B, int B_size){
         end = time(NULL);
         cout << "\t\t\tindexing: \t" << end-start << endl;
         start = time(NULL);
-        l = getResults(A_size,A_Sorted,B_Sorted,B_chain,B_bucket,1);
+        l = getResults(A_size,A_Sorted,A_hist,B_Sorted,B_chain,B_bucket,1);
         end = time(NULL);
         cout << "\t\t\tjoining: \t" << end-start << endl;
         free(B_chain);

@@ -1,5 +1,4 @@
 #include <iostream>
-#include "job.h"
 #include "join.h"
 #include <pthread.h>
 
@@ -69,6 +68,32 @@ int PartitionJob::Run(){
         hash[psum[index]+histCount[index]].key=i;
         hash[psum[index]+histCount[index]].payload=col[i];
         histCount[index]++;
+    }
+}
+
+int JoinJob::Run(){
+    int h1,h2,chainVal,chainPos;
+    for(int i=start;i<end;i++){
+        h1 = hashvalue(dec_to_bin(A[i].payload),n_last_digits);
+        h2 = hashfun2(A[i].payload);
+        chainPos = bucket[h1*divisor+h2];
+        if(chainPos == -1){
+            continue;
+        }
+        while(1){
+            if(B[chainPos].payload == A[i].payload){
+                if(biggestTable == 1){
+                    l->add(A[i].key,B[chainPos].key);
+                }
+                else if(biggestTable == 2){
+                    l->add(B[chainPos].key,A[i].key);
+                }
+            }
+            if(chain[chainPos] == -1){
+                break;
+            }
+            chainPos = chain[chainPos];
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <vector>
+#include "list.h"
 
 using namespace std;
 
@@ -55,6 +56,26 @@ class PartitionJob : public Job{
             this->psum = psum;
         };
         ~PartitionJob(){};
+        int Run();
+};
+
+class JoinJob : public Job{
+    public:
+        int start,end,biggestTable;
+        int *chain,*bucket;
+        Tuple *A,*B;
+        list *l;
+        JoinJob(list *l,int start,int end,Tuple *A,Tuple *B,int *chain, int *bucket,int biggestTable){
+            this->l = l;
+            this->start = start;
+            this->end = end;
+            this->A = A;
+            this->B = B;
+            this->chain = chain;
+            this->bucket = bucket;
+            this->biggestTable = biggestTable;
+        };
+        ~JoinJob(){};
         int Run();
 };
 
