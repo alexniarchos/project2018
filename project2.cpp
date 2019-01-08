@@ -1,6 +1,8 @@
 #include "functions.h"
 #include <time.h>
 
+JobScheduler *jobScheduler;
+
 int main(void){
     relation **rels = NULL;
     int numofrels;
@@ -9,6 +11,11 @@ int main(void){
         numofbuckets*=2;
     }
     rels = init_relations(&numofrels);
+
+    // init job scheduler
+    jobScheduler = new JobScheduler();
+    jobScheduler->Init(THREADS);
+
     int counter = 1;
     while(1){
         char* line=NULL;
@@ -42,6 +49,8 @@ int main(void){
         if(ret==-1)
             break;
     }
+    jobScheduler->Stop();
+    delete jobScheduler;
     for(int i=0;i<numofrels;i++){
         free(rels[i]->cols);
         for(int j=0;j<rels[i]->numofcols;j++){

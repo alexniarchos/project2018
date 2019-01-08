@@ -2,10 +2,12 @@
 #include <time.h>
 
 #define N 49999991 //largest prime number below 50.000.000
+#define ceil(x,y) (x+y-1)/y
 
 using namespace std;
 
 int numofbuckets;
+
 listnode::listnode(){
     next = NULL;
     tuples = (result*)malloc(bufsize);
@@ -206,12 +208,37 @@ relation** init_relations(int *numofrels){
 }
 
 void sort_hashtable(uint64_t *col,int numofentries,Tuple** hash,int** hist,int** psum){
-    for(int i=0;i<numofentries;i++){
-        uint64_t temp_binary=dec_to_bin(col[i]);
-        int index=hashvalue(temp_binary,n_last_digits);
-        (*hist)[index]++;
+    int threadHist[THREADS][numofbuckets];
+    for(int i=0;i<THREADS;i++){
+        for(int j=0;j<numofbuckets;j++){
+            threadHist[i][j] = 0;
+        }
     }
-    
+    int start=0,end=0,entriesForThread = ceil(numofentries,THREADS);
+    // lock
+    pthread_mutex_lock(&jobScheduler->queueLock);
+    for(int i=0;i<THREADS;i++){
+        start = end;
+        end += entriesForThread;
+        if(end > numofentries){
+            end = numofentries;
+        }
+        // cout << "numofentries: " << numofentries << " start: " << start << " end: " << end << endl;
+        jobScheduler->Schedule(new HistogramJob(threadHist[i],start,end,col));
+    }
+    // signal
+    pthread_cond_signal(&jobScheduler->queueNotEmpty);
+    // unlock
+    pthread_mutex_unlock(&jobScheduler->queueLock);
+
+    jobScheduler->Barrier();
+
+    for(int i=0;i<THREADS;i++){
+        for(int j=0;j<numofbuckets;j++){
+            (*hist)[j] += threadHist[i][j];
+        }
+    }
+
     for(int i=0;i<numofbuckets;i++){
         if(i==0)
             (*psum)[i]=0;
@@ -220,18 +247,58 @@ void sort_hashtable(uint64_t *col,int numofentries,Tuple** hash,int** hist,int**
     }
 
     // use secondary table to count how many of the items have been copied to sorted array
-    int *histCount=(int*)malloc(numofbuckets*sizeof(int));
-    for(int i=0;i<numofbuckets;i++)
-        histCount[i]=0;
+    int histCount[THREADS][numofbuckets];
+    for(int i=0;i<THREADS;i++){
+        for(int j=0;j<numofbuckets;j++){
+            histCount[i][j]=0;
+        }
+    }
+
+    Tuple threadHash[THREADS][numofentries];
 
     for(int i=0;i<numofentries;i++){
-        uint64_t temp_binary=dec_to_bin(col[i]);
-        int index=hashvalue(temp_binary,n_last_digits);
-        (*hash)[(*psum)[index]+histCount[index]].key=i;
-        (*hash)[(*psum)[index]+histCount[index]].payload=col[i];
-        histCount[index]++;
+        threadHash[0][i].key = 0;
+        threadHash[0][i].payload = 0;
     }
-    free(histCount);
+
+    start=0;
+    end=0;
+    // lock
+    pthread_mutex_lock(&jobScheduler->queueLock);
+    for(int i=0;i<THREADS;i++){
+        start = end;
+        end += entriesForThread;
+        if(end > numofentries){
+            end = numofentries;
+        }
+        // cout << "numofentries: " << numofentries << " start: " << start << " end: " << end << endl;
+        jobScheduler->Schedule(new PartitionJob(threadHash[i],histCount[i],start,end,col,*psum));
+    }
+    // signal
+    pthread_cond_signal(&jobScheduler->queueNotEmpty);
+    // unlock
+    pthread_mutex_unlock(&jobScheduler->queueLock);
+
+    jobScheduler->Barrier();
+
+    int totalHistCount[numofbuckets];
+    for(int i=0;i<numofbuckets;i++){
+        totalHistCount[i] = 0;
+    }
+
+    int threadHashPos=0;
+    for(int i=0;i<numofbuckets;i++){
+        if(i>0){
+            threadHashPos += totalHistCount[i-1];
+        }
+        for(int j=0;j<THREADS;j++){
+            for(int k=0;k<histCount[j][i];k++){
+                (*hash)[(*psum)[i]+totalHistCount[i]].key = threadHash[j][k+threadHashPos].key;
+                (*hash)[(*psum)[i]+totalHistCount[i]].payload = threadHash[j][k+threadHashPos].payload;
+                totalHistCount[i]++;
+            }
+        }
+    }
 }
 
 int hashfun2(int value){
