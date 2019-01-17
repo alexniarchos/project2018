@@ -198,11 +198,14 @@ void sort_hashtable(uint64_t *col,int numofentries,Tuple** hash,int** hist,int**
         }
     }
 
-    Tuple threadHash[THREADS][numofentries];
+    Tuple *threadHash[THREADS];
 
-    for(int i=0;i<numofentries;i++){
-        threadHash[0][i].key = 0;
-        threadHash[0][i].payload = 0;
+    for(int i=0;i<THREADS;i++){
+        threadHash[i] = (Tuple *)malloc(numofentries*sizeof(Tuple));
+        // for(int j=0;j<numofentries;j++){
+        //     threadHash[i][j].key = 0;
+        //     threadHash[i][j].payload = 0;
+        // }
     }
 
     start=0;
