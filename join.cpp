@@ -101,11 +101,13 @@ relation** init_relations(int *numofrels){
         addr+=sizeof(uint64_t);
         rels[i]->cols = (uint64_t**)malloc(rels[i]->numofcols*sizeof(uint64_t*));
         rels[i]->colStats = (ColStats**)malloc(rels[i]->numofcols*sizeof(ColStats*));
+        rels[i]->tempcolStats = (ColStats**)malloc(rels[i]->numofcols*sizeof(ColStats*));
         for (int j=0;j<rels[i]->numofcols;j++) {
             rels[i]->cols[j] = (uint64_t*)(addr);
             addr+=rels[i]->numofentries*sizeof(uint64_t);
             // calculate stats for each collumn
             rels[i]->colStats[j] = (ColStats*)malloc(sizeof(ColStats));
+            rels[i]->tempcolStats[j] = (ColStats*)malloc(sizeof(ColStats));
             int max = rels[i]->cols[j][0], min = rels[i]->cols[j][0];
             for(int k=0;k<rels[i]->numofentries;k++){
                 if(rels[i]->cols[j][k] > max){
