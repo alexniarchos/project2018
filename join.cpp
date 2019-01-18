@@ -168,6 +168,7 @@ void sort_hashtable(uint64_t *col,int numofentries,Tuple** hash,int** hist,int**
         // cout << "numofentries: " << numofentries << " start: " << start << " end: " << end << endl;
         jobScheduler->Schedule(new HistogramJob(threadHist[i],start,end,col));
     }
+    jobScheduler->totaljobs = THREADS;
     // signal
     pthread_cond_signal(&jobScheduler->queueNotEmpty);
     // unlock
@@ -219,6 +220,7 @@ void sort_hashtable(uint64_t *col,int numofentries,Tuple** hash,int** hist,int**
         // cout << "numofentries: " << numofentries << " start: " << start << " end: " << end << endl;
         jobScheduler->Schedule(new PartitionJob(threadHash[i],histCount[i],start,end,col,*psum));
     }
+    jobScheduler->totaljobs = THREADS;
     // signal
     pthread_cond_signal(&jobScheduler->queueNotEmpty);
     // unlock
@@ -243,6 +245,9 @@ void sort_hashtable(uint64_t *col,int numofentries,Tuple** hash,int** hist,int**
                 totalHistCount[i]++;
             }
         }
+    }
+    for(int i=0;i<THREADS;i++){
+        free(threadHash[i]);
     }
 }
 
@@ -298,6 +303,7 @@ list* getResults(int numofentries,Tuple *A,int *A_hist,Tuple *B,int *chain, int 
         // cout << "numofentries: " << numofentries << " start: " << start << " end: " << end << endl;
         jobScheduler->Schedule(new JoinJob(thread_lists[i],start,end,A,B,chain,bucket,biggestTable));
     }
+    jobScheduler->totaljobs = numofbuckets;
     // signal
     pthread_cond_signal(&jobScheduler->queueNotEmpty);
     // unlock

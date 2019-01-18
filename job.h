@@ -87,7 +87,8 @@ class JobScheduler {
         pthread_mutex_t queueLock;
         pthread_cond_t queueNotEmpty;
         pthread_cond_t queueEmpty;
-        int KILL_THREADS;
+        int totaljobs;
+        bool KILL_THREADS;
         JobScheduler();
         ~JobScheduler();
         // Initializes the JobScheduler with the number of open threads.

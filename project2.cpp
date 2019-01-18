@@ -1,9 +1,12 @@
 #include "functions.h"
 #include <time.h>
+#include <unistd.h>
 
 JobScheduler *jobScheduler;
 
-int main(void){
+using namespace std;
+
+int main(int argc, char **argv){
     relation **rels = NULL;
     int numofrels;
     numofbuckets=1;
@@ -49,8 +52,12 @@ int main(void){
         if(ret==-1)
             break;
     }
+    
+    // Stop job scheduler
     jobScheduler->Stop();
+    jobScheduler->Destroy();
     delete jobScheduler;
+
     for(int i=0;i<numofrels;i++){
         free(rels[i]->cols);
         for(int j=0;j<rels[i]->numofcols;j++){
