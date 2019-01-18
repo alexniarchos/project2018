@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <time.h>
+#include <cmath>
 
 void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresults,vector<string*> &results){
     cout << "Generating results..." << endl;
@@ -195,8 +196,88 @@ int checkmidresults(int rel_index,vector<midResult*> &midresults){
     }
     return 0;
 }
-void executefilters(SQLquery* query,relation **rels,vector<midResult*> &midresults){
+
+int sortfilters(SQLquery* query,relation **rels,int numofrels){
+    //apomonwse filters
+    for(int i=0;i<numofrels;i++){
+        for(int j=0;j<rels[i]->numofcols;j++){
+            rels[i]->tempcolStats[j]->l=rels[i]->colStats[j]->l;
+            rels[i]->tempcolStats[j]->u=rels[i]->colStats[j]->u;
+            rels[i]->tempcolStats[j]->f=rels[i]->colStats[j]->f;
+            rels[i]->tempcolStats[j]->d=rels[i]->colStats[j]->d;
+        }
+    }
+    for(int i=0;i<query->predicates.size();i++){
+        if(query->predicates[i][4]==-1){
+            int rel_index=query->predicates[i][0];
+            int rels_index=query->relations[rel_index];
+            int col=query->predicates[i][1];
+            int k1=query->predicates[i][3];
+            if(query->predicates[i][2]==0){
+                rels[rels_index]->tempcolStats[col]->l=k1;
+                rels[rels_index]->tempcolStats[col]->u=k1;
+                int fA=rels[rels_index]->tempcolStats[col]->f;
+                rels[rels_index]->tempcolStats[col]->f=rels[rels_index]->tempcolStats[col]->f/rels[rels_index]->tempcolStats[col]->d;
+                rels[rels_index]->tempcolStats[col]->d=1;
+                for(int j=0;j<rels[rels_index]->numofcols;j++){
+                    if(j==col)
+                        continue;
+                    rels[rels_index]->tempcolStats[j]->d=rels[rels_index]->tempcolStats[j]->d*(1.0-pow((1.0-double(rels[rels_index]->tempcolStats[col]->f)/double(fA)),double(rels[rels_index]->tempcolStats[j]->f)/double(rels[rels_index]->tempcolStats[j]->d)));
+                    rels[rels_index]->tempcolStats[j]->f=rels[rels_index]->tempcolStats[col]->f;
+                }
+            }
+            if(query->predicates[i][2]==1){
+                int rel_index=query->predicates[i][0];
+                int rels_index=query->relations[rel_index];
+                int col=query->predicates[i][1];
+                int k1=query->predicates[i][3];
+                if(k1<=rels[rels_index]->tempcolStats[col]->l){
+                    free(query->predicates[i]);
+                    query->predicates.erase(query->predicates.begin()+i);
+                    continue;
+                }
+                int fA=rels[rels_index]->tempcolStats[col]->f;
+                rels[rels_index]->tempcolStats[col]->f=(double(rels[rels_index]->tempcolStats[col]->u)-double(k1)/double(rels[rels_index]->tempcolStats[col]->u)-double(rels[rels_index]->tempcolStats[col]->l)*(double)fA);
+                rels[rels_index]->tempcolStats[col]->d=(double(rels[rels_index]->tempcolStats[col]->u)-double(k1)/double(rels[rels_index]->tempcolStats[col]->u)-double(rels[rels_index]->tempcolStats[col]->l)*(double)rels[rels_index]->tempcolStats[col]->d);
+                rels[rels_index]->tempcolStats[col]->l=k1;
+                for(int j=0;j<rels[rels_index]->numofcols;j++){
+                    if(j==col)
+                        continue;
+                    rels[rels_index]->tempcolStats[j]->d=rels[rels_index]->tempcolStats[j]->d*(1.0-pow((1.0-double(rels[rels_index]->tempcolStats[col]->f)/double(fA)),double(rels[rels_index]->tempcolStats[j]->f)/double(rels[rels_index]->tempcolStats[j]->d)));
+                    rels[rels_index]->tempcolStats[j]->f=rels[rels_index]->tempcolStats[col]->f;
+                }
+            }
+            if(query->predicates[i][2]==2){
+                int rel_index=query->predicates[i][0];
+                int rels_index=query->relations[rel_index];
+                int col=query->predicates[i][1];
+                int k2=query->predicates[i][3];
+                if(k2>=rels[rels_index]->tempcolStats[col]->u){
+                    free(query->predicates[i]);
+                    query->predicates.erase(query->predicates.begin()+i);
+                    continue;
+                }
+                int fA=rels[rels_index]->tempcolStats[col]->f;
+                rels[rels_index]->tempcolStats[col]->f=(double(k2)-double(rels[rels_index]->tempcolStats[col]->u)/double(rels[rels_index]->tempcolStats[col]->u)-double(rels[rels_index]->tempcolStats[col]->l)*(double)fA);
+                rels[rels_index]->tempcolStats[col]->d=(double(k2)-double(rels[rels_index]->tempcolStats[col]->u)/double(rels[rels_index]->tempcolStats[col]->u)-double(rels[rels_index]->tempcolStats[col]->l)*(double)rels[rels_index]->tempcolStats[col]->d);
+                rels[rels_index]->tempcolStats[col]->u=k2;
+                for(int j=0;j<rels[rels_index]->numofcols;j++){
+                    if(j==col)
+                        continue;
+                    rels[rels_index]->tempcolStats[j]->d=rels[rels_index]->tempcolStats[j]->d*(1.0-pow((1.0-double(rels[rels_index]->tempcolStats[col]->f)/double(fA)),double(rels[rels_index]->tempcolStats[j]->f)/double(rels[rels_index]->tempcolStats[j]->d)));
+                    rels[rels_index]->tempcolStats[j]->f=rels[rels_index]->tempcolStats[col]->f;
+                }
+            }
+        }
+    }
+    
+    //calculate
+    
+}
+
+void executefilters(SQLquery* query,relation **rels,vector<midResult*> &midresults,int numofrels){
     int index;
+    sortfilters(query,rels,numofrels);
     while((index=checkfilter(query))!=-1){
         int rel_index=query->predicates[index][0];
         int rels_index = query->relations[rel_index];
@@ -561,9 +642,9 @@ vector<int>* queryOptimiser(SQLquery* query){
     vector<int> *predicateList = new vector<int>();
 }
 
-void categoriser(SQLquery* query,relation **rels,vector<string*> &results){
+void categoriser(SQLquery* query,relation **rels,vector<string*> &results,int numofrels){
     vector<midResult*> midresults;
-    executefilters(query,rels,midresults);
+    executefilters(query,rels,midresults,numofrels);
     if(midresults.size()!=0){
         cout << "midresults size after filters = " << midresults.size() << " num of columns = " << midresults[0]->cols.size() << " num of entries = " << midresults[0]->colSize << endl;
         cout << "RelId = ";

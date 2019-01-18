@@ -35,7 +35,7 @@ int main(int argc, char **argv){
             cout << "Query: " << counter++ << endl;
             time_t start,end;
             start = time(NULL);
-            categoriser(query,rels,results);
+            categoriser(query,rels,results,numofrels);
             end = time(NULL);
             cout << "----query time: \t" << end-start << endl; 
             for(int i=0;i<query->predicates.size();i++)

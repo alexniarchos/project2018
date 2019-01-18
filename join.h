@@ -34,6 +34,7 @@ class relation{
     public: 
         uint64_t **cols;
         ColStats **colStats;
+        ColStats **tempcolStats;
         int numofcols;
         int numofentries;
 };

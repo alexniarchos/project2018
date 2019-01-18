@@ -22,7 +22,7 @@ class midResult{
         vector<int> relId;
 };
 
-void categoriser(SQLquery* query,relation **rels,vector<string*> &results);
+void categoriser(SQLquery* query,relation **rels,vector<string*> &results,int numofrels);
 int checkfilter(SQLquery* query);
 void none_of_two_in_midresults(SQLquery* query,int index,relation** rels,vector<midResult*> &midresults);
 void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<midResult*> &midresults);
