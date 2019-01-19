@@ -1,0 +1,7 @@
+/home/bazzter/Desktop/submission/build/release/CMakeFiles/rebuild_cache.dir
+/home/bazzter/Desktop/submission/build/release/CMakeFiles/Driver.dir
+/home/bazzter/Desktop/submission/build/release/CMakeFiles/harness.dir
+/home/bazzter/Desktop/submission/build/release/CMakeFiles/database.dir
+/home/bazzter/Desktop/submission/build/release/CMakeFiles/Query2SQL.dir
+/home/bazzter/Desktop/submission/build/release/CMakeFiles/link_target.dir
+/home/bazzter/Desktop/submission/build/release/CMakeFiles/edit_cache.dir

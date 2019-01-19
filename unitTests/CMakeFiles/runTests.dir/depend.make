@@ -29,3 +29,8 @@ CMakeFiles/runTests.dir/join_test.cpp.o: /home/bazzter/Desktop/project2018/join.
 CMakeFiles/runTests.dir/join_test.cpp.o: /home/bazzter/Desktop/project2018/list.h
 CMakeFiles/runTests.dir/join_test.cpp.o: join_test.cpp
 
+CMakeFiles/runTests.dir/main_test.cpp.o: /home/bazzter/Desktop/project2018/job.h
+CMakeFiles/runTests.dir/main_test.cpp.o: /home/bazzter/Desktop/project2018/join.h
+CMakeFiles/runTests.dir/main_test.cpp.o: /home/bazzter/Desktop/project2018/list.h
+CMakeFiles/runTests.dir/main_test.cpp.o: main_test.cpp
+

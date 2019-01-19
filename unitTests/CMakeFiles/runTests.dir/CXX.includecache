@@ -15,6 +15,8 @@ string
 -
 time.h
 -
+cmath
+-
 
 /home/bazzter/Desktop/project2018/functions.h
 iostream
@@ -125,6 +127,16 @@ vector
 -
 
 /home/bazzter/Desktop/project2018/unitTests/join_test.cpp
+../join.h
+/home/bazzter/Desktop/project2018/join.h
+../list.h
+/home/bazzter/Desktop/project2018/list.h
+gtest/gtest.h
+-
+iostream
+-
+
+/home/bazzter/Desktop/project2018/unitTests/main_test.cpp
 ../join.h
 /home/bazzter/Desktop/project2018/join.h
 ../list.h

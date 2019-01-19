@@ -5,6 +5,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/runTests.dir/home/bazzter/Desktop/project2018/list.cpp.o"
   "CMakeFiles/runTests.dir/home/bazzter/Desktop/project2018/functions.cpp.o"
   "CMakeFiles/runTests.dir/home/bazzter/Desktop/project2018/parser.cpp.o"
+  "CMakeFiles/runTests.dir/main_test.cpp.o"
   "runTests.pdb"
   "runTests"
 )

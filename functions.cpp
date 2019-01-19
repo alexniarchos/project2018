@@ -5,20 +5,20 @@
 #include <cmath>
 
 void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresults,vector<string*> &results){
-    cout << "Generating results..." << endl;
+    // cout << "Generating results..." << endl;
     int rel,col,count=0;
     uint64_t sum=0;
     string* output=new string();
-    ofstream outfile; 
-    outfile.open("output",std::ofstream::out | std::ofstream::app);
+    // ofstream outfile; 
+    // outfile.open("output",std::ofstream::out | std::ofstream::app);
     for(int i=0;i<query->views.size();i++){
         rel = query->views[i][0];
         col = query->views[i][1];
-        cout << rel << "." << col << endl;
-        cout << "midresults colsize = " << midresults[0]->colSize << endl;
+        // cout << rel << "." << col << endl;
+        // cout << "midresults colsize = " << midresults[0]->colSize << endl;
         for(int j=0;j<midresults[0]->cols.size();j++){
             if(rel == midresults[0]->relId[j]){
-                cout << "position of rel in midresult = " << j << endl;
+                // cout << "position of rel in midresult = " << j << endl;
                 sum=0;
                 count=0;
                 for(int k=0;k<midresults[0]->colSize;k++){
@@ -26,7 +26,7 @@ void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresu
                     sum += rels[query->relations[rel]]->cols[col][midresults[0]->cols[j][k]];
                     count ++;
                 }
-                cout << "sum = " << sum << " count = " << count << endl;
+                // cout << "sum = " << sum << " count = " << count << endl;
                 if(sum == 0){
                     output->append("NULL ");
                 }
@@ -36,13 +36,14 @@ void generateResults(SQLquery* query,relation** rels,vector<midResult*> &midresu
                     output->append(csum);
                     free(csum);
                 }
-                cout << "--------------------------------------------" << endl;
+                // cout << "--------------------------------------------" << endl;
             }
         }
     }
+    output->erase(output->end()-1);
     output->append("\n");
     results.push_back(output);
-    outfile << output->c_str();
+    // outfile << output->c_str();
 }
 
 //execute using rhj and create new midresult object
@@ -104,7 +105,7 @@ void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<mi
             }
         }
     }
-    cout << "midresPos_r0 = " << midresPos_r0 << " midresPos_r1 = " << midresPos_r1 << endl;
+    // cout << "midresPos_r0 = " << midresPos_r0 << " midresPos_r1 = " << midresPos_r1 << endl;
     // create input arrays for joining using row ids
     uint64_t *temp_r0 = (uint64_t*)malloc(midresults[midresPos_r0]->colSize*sizeof(uint64_t));
     uint64_t *temp_r1 = (uint64_t*)malloc(midresults[midresPos_r1]->colSize*sizeof(uint64_t));
@@ -155,10 +156,10 @@ void both_in_diff_midresults(SQLquery* query,int index,relation** rels,vector<mi
     for(int i=0;i<midresults[midresPos_r1]->relId.size();i++){
         midres->relId.push_back(midresults[midresPos_r1]->relId[i]);
     }
-    cout << "midres->colSize = " << midres->colSize << endl;
-    for(int i=0;i<midres->relId.size();i++){
-        cout << "relid = " << midres->relId[i] << endl;
-    }
+    // cout << "midres->colSize = " << midres->colSize << endl;
+    // for(int i=0;i<midres->relId.size();i++){
+    //     cout << "relid = " << midres->relId[i] << endl;
+    // }
     // delete old mid results and add the new one
     for(int i=0;i<midresults[midresPos_r0]->cols.size();i++)
         free(midresults[midresPos_r0]->cols[i]);
@@ -506,8 +507,8 @@ void scansamemidresults(SQLquery* query,int index,relation **rels,vector<midResu
 
 void samerelation(SQLquery* query,relation **rels,int index,vector<midResult*> &midresults){
     Case ret=samerelCases(query,index,midresults);
-    cout << "Query: " << query->predicates[index][0] << "." << query->predicates[index][1] << " = " << query->predicates[index][3] << "." << query->predicates[index][4] << endl;
-    cout << "same ret = " << ret << endl;
+    // cout << "Query: " << query->predicates[index][0] << "." << query->predicates[index][1] << " = " << query->predicates[index][3] << "." << query->predicates[index][4] << endl;
+    // cout << "same ret = " << ret << endl;
     if(ret == NotInMidResult)
         scansamerel(query,index,rels,midresults);
     else if(ret == InMidResult)
@@ -585,7 +586,7 @@ void diffrelationoneonmidresult(SQLquery* query,int index,relation **rels,vector
     time(&start);
     result=RadixHashJoin(rhjinput,midresults[midresultindex]->colSize,rels[query->relations[relnotinmidresult]]->cols[colnotinmidresult],rels[query->relations[relnotinmidresult]]->numofentries);
     time(&end);
-    cout << "time spent by rhj: " << end-start << endl;
+    // cout << "time spent by rhj: " << end-start << endl;
     free(rhjinput);
     int** tempresults=(int**)malloc((midresults[midresultindex]->cols.size()+1)*sizeof(int*));
     for(int g=0;g<(midresults[midresultindex]->cols.size()+1);g++)
@@ -621,9 +622,9 @@ void diffrelationoneonmidresult(SQLquery* query,int index,relation **rels,vector
 
 void differentrelation(SQLquery* query,relation **rels,int index,vector<midResult*> &midresults){
     Case ret=diffrelCases(query,index,midresults);
-    cout << "Query: " << query->predicates[index][0] << "." << query->predicates[index][1] << " = " << query->predicates[index][3] << "." << query->predicates[index][4] << endl;
-    cout << "ret = " << ret << endl;
-    cout << "index = " << index << endl;
+    // cout << "Query: " << query->predicates[index][0] << "." << query->predicates[index][1] << " = " << query->predicates[index][3] << "." << query->predicates[index][4] << endl;
+    // cout << "ret = " << ret << endl;
+    // cout << "index = " << index << endl;
     if(ret == NoneInMidResults){//2.1)none of 2 are in mid results
         //execute using rhj and build midresult object
         none_of_two_in_midresults(query,index,rels,midresults);
@@ -645,23 +646,23 @@ vector<int>* queryOptimiser(SQLquery* query){
 void categoriser(SQLquery* query,relation **rels,vector<string*> &results,int numofrels){
     vector<midResult*> midresults;
     executefilters(query,rels,midresults,numofrels);
-    if(midresults.size()!=0){
-        cout << "midresults size after filters = " << midresults.size() << " num of columns = " << midresults[0]->cols.size() << " num of entries = " << midresults[0]->colSize << endl;
-        cout << "RelId = ";
-        for(int i=0;i<midresults[0]->relId.size();i++){
-            cout << midresults[0]->relId[i] << " ";
-        }
-        cout << endl;
-    }
+    // if(midresults.size()!=0){
+    //     cout << "midresults size after filters = " << midresults.size() << " num of columns = " << midresults[0]->cols.size() << " num of entries = " << midresults[0]->colSize << endl;
+    //     cout << "RelId = ";
+    //     for(int i=0;i<midresults[0]->relId.size();i++){
+    //         cout << midresults[0]->relId[i] << " ";
+    //     }
+    //     cout << endl;
+    // }
     int numofqueries=query->predicates.size();
     for(int i=0;i<numofqueries;i++){
         int index = i;
         if(query->predicates[index][0]==query->predicates[index][3]){ //1)are at the same relation
-            cout << "Same" << endl;
+            // cout << "Same" << endl;
             samerelation(query,rels,index,midresults);  
         }
         else{   //2)belong to different relations
-            cout << "Different" << endl;
+            // cout << "Different" << endl;
             differentrelation(query,rels,index,midresults);
         }
     }

@@ -10,6 +10,7 @@ set(CMAKE_DEPENDS_CHECK_CXX
   "/home/bazzter/Desktop/project2018/list.cpp" "/home/bazzter/Desktop/project2018/unitTests/CMakeFiles/runTests.dir/home/bazzter/Desktop/project2018/list.cpp.o"
   "/home/bazzter/Desktop/project2018/parser.cpp" "/home/bazzter/Desktop/project2018/unitTests/CMakeFiles/runTests.dir/home/bazzter/Desktop/project2018/parser.cpp.o"
   "/home/bazzter/Desktop/project2018/unitTests/join_test.cpp" "/home/bazzter/Desktop/project2018/unitTests/CMakeFiles/runTests.dir/join_test.cpp.o"
+  "/home/bazzter/Desktop/project2018/unitTests/main_test.cpp" "/home/bazzter/Desktop/project2018/unitTests/CMakeFiles/runTests.dir/main_test.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

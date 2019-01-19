@@ -1,6 +1,6 @@
 parser
 .vscode/settings.json
-project2
+project
 r0
 r1
 r2
@@ -24,3 +24,5 @@ small.result
 small.work
 testInput
 input
+*.tbl
+*.sql

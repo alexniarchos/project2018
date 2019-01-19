@@ -66,7 +66,7 @@ relation** init_relations(int *numofrels){
         if (filename == "Done") break;
         filenames.push_back(filename);
     }
-    cout << "num of rels = " << filenames.size() << endl;
+    // cout << "num of rels = " << filenames.size() << endl;
     *numofrels = filenames.size();
     rels = (relation**)malloc(filenames.size() * sizeof(relation*));
     for(int i=0;i<filenames.size();i++){
@@ -97,7 +97,7 @@ relation** init_relations(int *numofrels){
         rels[i]->numofentries=*(uint64_t*)(addr);
         addr+=sizeof(uint64_t);
         rels[i]->numofcols=*(uint64_t*)(addr);
-        cout << filenames[i].c_str() << " entries: " << rels[i]->numofentries << " cols: " << rels[i]->numofcols << endl;
+        // cout << filenames[i].c_str() << " entries: " << rels[i]->numofentries << " cols: " << rels[i]->numofcols << endl;
         addr+=sizeof(uint64_t);
         rels[i]->cols = (uint64_t**)malloc(rels[i]->numofcols*sizeof(uint64_t*));
         rels[i]->colStats = (ColStats**)malloc(rels[i]->numofcols*sizeof(ColStats*));
@@ -145,7 +145,7 @@ relation** init_relations(int *numofrels){
             // free distinct array
             free(distinctVal);
             // print stats
-            cout << "u = " << rels[i]->colStats[j]->u << " l = " << rels[i]->colStats[j]->l << " f = " << rels[i]->colStats[j]->f << " d = " << rels[i]->colStats[j]->d << endl;
+            // cout << "u = " << rels[i]->colStats[j]->u << " l = " << rels[i]->colStats[j]->l << " f = " << rels[i]->colStats[j]->f << " d = " << rels[i]->colStats[j]->d << endl;
         }
     }
     return rels;
@@ -343,8 +343,8 @@ list* RadixHashJoin(uint64_t* A, int A_size, uint64_t* B, int B_size){
     Tuple *A_Sorted,*B_Sorted;
     int *A_hist,*A_psum,*B_hist,*B_psum,*A_chain,*A_bucket,*B_chain,*B_bucket;
     list *l;
-    time_t start,end;
-    start = time(NULL);
+    // time_t start,end;
+    // start = time(NULL);
     // init arrays and sort
     A_Sorted = (Tuple*)malloc(A_size*sizeof(Tuple));
     for (int i=0;i<A_size;i++){
@@ -367,29 +367,29 @@ list* RadixHashJoin(uint64_t* A, int A_size, uint64_t* B, int B_size){
     B_psum=(int*)malloc(numofbuckets*sizeof(int));
 
     sort_hashtable(B,B_size,&B_Sorted,&B_hist,&B_psum);
-    end = time(NULL);
-    cout << "\t\t\tsorting: \t" << end-start << endl;
+    // end = time(NULL);
+    // cout << "\t\t\tsorting: \t" << end-start << endl;
     // Create indexing to the array with the least amount of entries
     if(A_size < B_size){
-        start = time(NULL);
+        // start = time(NULL);
         create_indexing(A_size,A_Sorted,A_hist,&A_chain,&A_bucket);
-        end = time(NULL);
-        cout << "\t\t\tindexing: \t" << end-start << endl;
-        start = time(NULL);
+        // end = time(NULL);
+        // cout << "\t\t\tindexing: \t" << end-start << endl;
+        // start = time(NULL);
         l = getResults(B_size,B_Sorted,B_hist,A_Sorted,A_chain,A_bucket,2);
-        end = time(NULL);
-        cout << "\t\t\tjoining: \t" << end-start << endl;
+        // end = time(NULL);
+        // cout << "\t\t\tjoining: \t" << end-start << endl;
         free(A_chain);
         free(A_bucket);
     }else{
-        start = time(NULL);
+        // start = time(NULL);
         create_indexing(B_size,B_Sorted,B_hist,&B_chain,&B_bucket);
-        end = time(NULL);
-        cout << "\t\t\tindexing: \t" << end-start << endl;
-        start = time(NULL);
+        // end = time(NULL);
+        // cout << "\t\t\tindexing: \t" << end-start << endl;
+        // start = time(NULL);
         l = getResults(A_size,A_Sorted,A_hist,B_Sorted,B_chain,B_bucket,1);
-        end = time(NULL);
-        cout << "\t\t\tjoining: \t" << end-start << endl;
+        // end = time(NULL);
+        // cout << "\t\t\tjoining: \t" << end-start << endl;
         free(B_chain);
         free(B_bucket);
     }
