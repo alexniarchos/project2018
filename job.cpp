@@ -33,24 +33,47 @@ int JobScheduler::ExecuteJob(){
     // remove job from queue
     jobQueue.erase(jobQueue.begin());
 
+    // unlock
+    pthread_mutex_unlock(&queueLock);
+
     // execute job
     job->Run();
+
+    // delete job
+    delete job;
+
+    // lock
+    pthread_mutex_lock(&queueLock);
+
+    totaljobs--;
+    if(totaljobs==0){
+        pthread_cond_signal(&jobScheduler->queueEmpty);
+    }
+
+    // unlock
+    pthread_mutex_unlock(&queueLock);
 }
 
 void JobScheduler::Barrier(){
     pthread_mutex_lock(&queueLock);
-    while(jobQueue.size()>0){
+    while(totaljobs > 0){
         pthread_cond_wait(&queueEmpty,&queueLock);
     }
     pthread_mutex_unlock(&queueLock);
 }
 
 bool JobScheduler::Destroy(){
-
+    pthread_mutex_destroy(&queueLock);
+    pthread_cond_destroy(&queueEmpty);
+    pthread_cond_destroy(&queueNotEmpty);
 }
 
 void JobScheduler::Stop(){
-
+    KILL_THREADS = true;
+    pthread_cond_broadcast(&queueNotEmpty);
+    for(int i=0;i<THREADS;i++){
+        pthread_join(threads[i],NULL);
+    }
 }
 
 int HistogramJob::Run(){
@@ -105,14 +128,12 @@ void *threadFun(void*){
             // queue is empty wait for next batch of jobs to be scheduled
             pthread_cond_wait(&jobScheduler->queueNotEmpty,&jobScheduler->queueLock);
         }
-        if(jobScheduler->KILL_THREADS == false){
-            // execute job
-            jobScheduler->ExecuteJob();
+        // cout << "kt = " << jobScheduler->KILL_THREADS << endl;
+        if(jobScheduler->KILL_THREADS){
+            pthread_mutex_unlock(&jobScheduler->queueLock);
+            pthread_exit(NULL);
         }
-        if(jobScheduler->jobQueue.size()==0){
-            pthread_cond_signal(&jobScheduler->queueEmpty);
-        }
-        // unlock
-        pthread_mutex_unlock(&jobScheduler->queueLock);
+        // execute job
+        jobScheduler->ExecuteJob();
     }
 }

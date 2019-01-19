@@ -4,4 +4,4 @@
 
 Compile: make
 
-Run: ./project2
+Run: ./project
