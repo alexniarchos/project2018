@@ -639,7 +639,69 @@ void differentrelation(SQLquery* query,relation **rels,int index,vector<midResul
 }
 
 vector<int>* queryOptimiser(SQLquery* query){
-    vector<int> *predicateList = new vector<int>();
+}
+
+int determinetype(SQLquery* query,int* predicate){
+    int relindex1=predicate[0];
+    int rels_index1=query->relations[relindex1];
+    int relindex2=predicate[3];
+    int rels_index2=query->relations[relindex2];
+    if(rels_index1!=rels_index2){
+        return 1;
+    }
+    else if(rels_index1==rels_index2){
+        if(predicate[1]==predicate[4])
+            return 2;
+        else if(predicate[1]!=predicate[4])
+            return 0;
+    }
+}
+
+void calculate_filter(SQLquery* query,Statistics* statistic,int *predicate,relation** rels){
+    int index=-1;
+    for(int i=0;i<statistic->relations.size();i++){
+        if(statistic->relations[i]->rel_index==predicate[0]){
+            index=i;
+            break;
+        }
+    }
+    if(index==-1){
+        index=statistic->relations.size();
+        int relindex=predicate[0];
+        int rels_index=query->relations[relindex];
+        statisticRelation* statisticRel=new statisticRelation();
+        statisticRel->numofcols=rels[rels_index]->numofcols;
+        statisticRel->colStats=(ColStats**)malloc(statisticRel->numofcols*sizeof(ColStats*));
+        for(int i=0;i<statisticRel->numofcols;i++){
+            statisticRel->colStats[i]=(ColStats*)malloc(sizeof(ColStats));
+        }
+    }
+
+}
+
+void calculate_join(SQLquery* query,Statistics* statistic,int *predicate,relation** rels){
+
+}
+
+void calculate_autocorrelation(SQLquery* query,Statistics* statistic,int *predicate,relation** rels){
+
+}
+
+void statistics(SQLquery* query,relation** rels){
+    vector<Statistics*> predicateList;
+    for(int i=0;i<query->predicates.size();i++){
+        Statistics* newstatistic=new Statistics();
+        int ret=determinetype(query,query->predicates[i]);
+        if(ret==0){
+            calculate_filter(query,newstatistic,query->predicates[i],rels);
+        }
+        else if(ret==1){
+            calculate_join(query,newstatistic,query->predicates[i],rels);
+        }
+        else if(ret==2){
+            calculate_autocorrelation(query,newstatistic,query->predicates[i],rels);
+        }
+    }
 }
 
 void categoriser(SQLquery* query,relation **rels,vector<string*> &results,int numofrels){
@@ -654,6 +716,7 @@ void categoriser(SQLquery* query,relation **rels,vector<string*> &results,int nu
         cout << endl;
     }
     int numofqueries=query->predicates.size();
+    statistics(query,rels);
     for(int i=0;i<numofqueries;i++){
         int index = i;
         if(query->predicates[index][0]==query->predicates[index][3]){ //1)are at the same relation

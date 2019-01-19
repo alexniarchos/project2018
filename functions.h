@@ -22,6 +22,21 @@ class midResult{
         vector<int> relId;
 };
 
+class statisticRelation{
+    public:
+        int rel_index;
+        ColStats **colStats;
+        int numofcols;
+};
+
+class Statistics{
+    public:
+        vector<int*> predicates; //calculated predicates
+        vector<statisticRelation*> relations;
+        int score;
+};
+
+
 void categoriser(SQLquery* query,relation **rels,vector<string*> &results,int numofrels);
 int checkfilter(SQLquery* query);
 void none_of_two_in_midresults(SQLquery* query,int index,relation** rels,vector<midResult*> &midresults);
