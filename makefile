@@ -1,5 +1,5 @@
 CC = g++ 
-CPPFLAGS = -g
+CPPFLAGS = -g --std=c++11 -O3
 default: project clean
 project: project.o functions.o join.o parser.o job.o list.o
 	$(CC) $(CPPFLAGS) -o ./submission/build/release/project project.o join.o functions.o parser.o job.o list.o -pthread -O3
@@ -16,4 +16,4 @@ list.o: list.cpp list.h
 project2.o: project.cpp functions.h
 	$(CC) $(CPPFLAGS) -c project.cpp
 clean:
-	rm *.o output
+	rm *.o

@@ -123,6 +123,33 @@ runTests/fast:
 	$(MAKE) -f CMakeFiles/runTests.dir/build.make CMakeFiles/runTests.dir/build
 .PHONY : runTests/fast
 
+functions_test.o: functions_test.cpp.o
+
+.PHONY : functions_test.o
+
+# target to build an object file
+functions_test.cpp.o:
+	$(MAKE) -f CMakeFiles/runTests.dir/build.make CMakeFiles/runTests.dir/functions_test.cpp.o
+.PHONY : functions_test.cpp.o
+
+functions_test.i: functions_test.cpp.i
+
+.PHONY : functions_test.i
+
+# target to preprocess a source file
+functions_test.cpp.i:
+	$(MAKE) -f CMakeFiles/runTests.dir/build.make CMakeFiles/runTests.dir/functions_test.cpp.i
+.PHONY : functions_test.cpp.i
+
+functions_test.s: functions_test.cpp.s
+
+.PHONY : functions_test.s
+
+# target to generate assembly for a file
+functions_test.cpp.s:
+	$(MAKE) -f CMakeFiles/runTests.dir/build.make CMakeFiles/runTests.dir/functions_test.cpp.s
+.PHONY : functions_test.cpp.s
+
 home/bazzter/Desktop/project2018/functions.o: home/bazzter/Desktop/project2018/functions.cpp.o
 
 .PHONY : home/bazzter/Desktop/project2018/functions.o
@@ -321,6 +348,9 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... runTests"
 	@echo "... edit_cache"
+	@echo "... functions_test.o"
+	@echo "... functions_test.i"
+	@echo "... functions_test.s"
 	@echo "... home/bazzter/Desktop/project2018/functions.o"
 	@echo "... home/bazzter/Desktop/project2018/functions.i"
 	@echo "... home/bazzter/Desktop/project2018/functions.s"

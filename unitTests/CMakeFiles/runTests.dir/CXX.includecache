@@ -126,6 +126,18 @@ iostream
 vector
 -
 
+/home/bazzter/Desktop/project2018/unitTests/functions_test.cpp
+../join.h
+/home/bazzter/Desktop/project2018/join.h
+../list.h
+/home/bazzter/Desktop/project2018/list.h
+../functions.h
+/home/bazzter/Desktop/project2018/functions.h
+gtest/gtest.h
+-
+iostream
+-
+
 /home/bazzter/Desktop/project2018/unitTests/join_test.cpp
 ../join.h
 /home/bazzter/Desktop/project2018/join.h
