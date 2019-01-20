@@ -22,6 +22,41 @@ class midResult{
         vector<int> relId;
 };
 
+class statisticRelation{
+    public:
+        int rel_index;
+        ColStats **colStats;
+        int numofcols;
+};
+
+class Statistics{
+    public:
+        vector<int*> predicates; //calculated predicates
+        vector<statisticRelation*> relations;
+        uint64_t score;
+        Statistics():score(0){}
+        Statistics(const Statistics *oldstatistic){
+            for(int i=0;i<oldstatistic->predicates.size();i++){
+                int* predicate=(int*)malloc(5*sizeof(int));
+                memcpy(predicate,oldstatistic->predicates[i],5*sizeof(int));
+                predicates.push_back(predicate);
+            }
+            score=oldstatistic->score;
+            for(int i=0;i<oldstatistic->relations.size();i++){
+                statisticRelation* newrel=new statisticRelation();
+                newrel->numofcols=oldstatistic->relations[i]->numofcols;
+                newrel->rel_index=oldstatistic->relations[i]->rel_index;
+                newrel->colStats=(ColStats**)malloc(oldstatistic->relations[i]->numofcols*sizeof(ColStats*));
+                for(int j=0;j<oldstatistic->relations[i]->numofcols;j++){
+                    newrel->colStats[j]=(ColStats*)malloc(sizeof(ColStats));
+                    memcpy(newrel->colStats[j],oldstatistic->relations[i]->colStats[j],sizeof(ColStats));
+                }
+                relations.push_back(newrel);
+            }
+        }
+};
+
+
 void categoriser(SQLquery* query,relation **rels,vector<string*> &results,int numofrels);
 int checkfilter(SQLquery* query);
 void none_of_two_in_midresults(SQLquery* query,int index,relation** rels,vector<midResult*> &midresults);

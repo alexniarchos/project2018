@@ -640,7 +640,394 @@ void differentrelation(SQLquery* query,relation **rels,int index,vector<midResul
 }
 
 vector<int>* queryOptimiser(SQLquery* query){
-    vector<int> *predicateList = new vector<int>();
+}
+
+int determinetype(SQLquery* query,Statistics* statistic,int* predicate){
+    int relindex1=predicate[0];
+    int rels_index1=query->relations[relindex1];
+    int relindex2=predicate[3];
+    int rels_index2=query->relations[relindex2];
+    if(rels_index1!=rels_index2){
+        int flag1=0;
+        int flag2=0;
+        for(int i=0;i<statistic->relations.size();i++){
+            if(predicate[0]==statistic->relations[i]->rel_index)
+                flag1=1;
+            if(predicate[3]==statistic->relations[i]->rel_index)
+                flag2=1;
+           
+        }
+        if(flag1==1 && flag2==1){
+            return 0;
+        }
+        return 1;
+    }
+    else if(rels_index1==rels_index2){
+        if(predicate[1]==predicate[4])
+            return 2;
+        else if(predicate[1]!=predicate[4])
+            return 0;
+    }
+}
+
+void calculate_filter(SQLquery* query,Statistics* statistic,int *predicate,relation** rels){
+    int index1=-1;
+    for(int i=0;i<statistic->relations.size();i++){
+        if(statistic->relations[i]->rel_index==predicate[0]){
+            index1=i;
+            break;
+        }
+    }
+    if(index1==-1){
+        index1=statistic->relations.size();
+        int relindex=predicate[0];
+        int rels_index=query->relations[relindex];
+        statisticRelation* statisticRel=new statisticRelation();
+        statisticRel->numofcols=rels[rels_index]->numofcols;
+        statisticRel->colStats=(ColStats**)malloc(statisticRel->numofcols*sizeof(ColStats*));
+        for(int i=0;i<statisticRel->numofcols;i++){
+            statisticRel->colStats[i]=(ColStats*)malloc(sizeof(ColStats));
+            memcpy(statisticRel->colStats[i],rels[rels_index]->colStats[i],sizeof(ColStats));
+        }
+        statisticRel->rel_index=predicate[0];
+        statistic->relations.push_back(statisticRel);
+    }
+    int index2=-1;
+    for(int i=0;i<statistic->relations.size();i++){
+        if(statistic->relations[i]->rel_index==predicate[3]){
+            index2=i;
+            break;
+        }
+    }
+    if(index2==-1){
+        index2=statistic->relations.size();
+        int relindex=predicate[3];
+        int rels_index=query->relations[relindex];
+        statisticRelation* statisticRel=new statisticRelation();
+        statisticRel->numofcols=rels[rels_index]->numofcols;
+        statisticRel->colStats=(ColStats**)malloc(statisticRel->numofcols*sizeof(ColStats*));
+        for(int i=0;i<statisticRel->numofcols;i++){
+            statisticRel->colStats[i]=(ColStats*)malloc(sizeof(ColStats));
+            memcpy(statisticRel->colStats[i],rels[rels_index]->colStats[i],sizeof(ColStats));
+        }
+        statisticRel->rel_index=predicate[3];
+        statistic->relations.push_back(statisticRel);
+    }
+    int fA=statistic->relations[index1]->colStats[predicate[1]]->f;
+    int min;
+    if(statistic->relations[index1]->colStats[predicate[1]]->l>statistic->relations[index2]->colStats[predicate[4]]->l)
+        min=statistic->relations[index1]->colStats[predicate[1]]->l;
+    else
+        min=statistic->relations[index2]->colStats[predicate[4]]->l;
+    statistic->relations[index2]->colStats[predicate[4]]->l=statistic->relations[index1]->colStats[predicate[1]]->l=min;
+    
+    int max;
+    if(statistic->relations[index1]->colStats[predicate[1]]->u<statistic->relations[index2]->colStats[predicate[4]]->u)
+        max=statistic->relations[index1]->colStats[predicate[1]]->u;
+    else
+        max=statistic->relations[index2]->colStats[predicate[4]]->u;
+    statistic->relations[index2]->colStats[predicate[4]]->u=statistic->relations[index1]->colStats[predicate[1]]->u=max;
+    int n=max-min+1;
+    statistic->relations[index2]->colStats[predicate[4]]->f=statistic->relations[index1]->colStats[predicate[1]]->f=statistic->relations[index1]->colStats[predicate[1]]->f/n;
+    statistic->relations[index2]->colStats[predicate[4]]->d=statistic->relations[index1]->colStats[predicate[1]]->d=statistic->relations[index1]->colStats[predicate[1]]->d*(1.0-(double)pow((1.0-(double)statistic->relations[index1]->colStats[predicate[1]]->f/fA),(double)fA/(double)statistic->relations[index1]->colStats[predicate[1]]->d));
+
+    for(int i=0;i<statistic->relations.size();i++){
+        for(int j=0;j<statistic->relations[i]->numofcols;j++){
+            if((index1==i && j==predicate[1]) || (index2==i && j==predicate[1]))
+                continue;
+            statistic->relations[i]->colStats[j]->d=statistic->relations[i]->colStats[j]->d*(1.0-(double)pow((1.0-(double)statistic->relations[index1]->colStats[predicate[1]]->f/fA),(double)statistic->relations[i]->colStats[j]->f/(double)statistic->relations[i]->colStats[j]->d));
+            statistic->relations[i]->colStats[j]->f=statistic->relations[index1]->colStats[predicate[1]]->f;
+        }
+    }
+    statistic->score+=statistic->relations[index1]->colStats[predicate[1]]->f;
+    statistic->predicates.push_back(predicate);
+}
+
+void calculate_prejoin_filter(Statistics* statistic,int index1,int index2,int who_belongs,int who_not_belongs,int* predicate){
+    int min;
+    if(statistic->relations[index1]->colStats[predicate[1]]->l >statistic->relations[index2]->colStats[predicate[4]]->l)
+        min=statistic->relations[index1]->colStats[predicate[1]]->l;
+    else
+        min=statistic->relations[index2]->colStats[predicate[4]]->l;
+
+    int max;
+    if(statistic->relations[index1]->colStats[predicate[1]]->u < statistic->relations[index2]->colStats[predicate[4]]->u)
+        max=statistic->relations[index1]->colStats[predicate[1]]->u;
+    else
+        max=statistic->relations[index2]->colStats[predicate[4]]->u;
+    int fA_belonged,fA_not_belonged,belong_index,not_belong_index;
+    if(who_belongs==index1){
+        fA_belonged=statistic->relations[index1]->colStats[predicate[1]]->f;
+        belong_index=predicate[1];
+        fA_not_belonged=statistic->relations[index2]->colStats[predicate[4]]->f;
+        not_belong_index=predicate[4];
+    }
+    else{
+        fA_not_belonged=statistic->relations[index1]->colStats[predicate[1]]->f;
+        not_belong_index=predicate[1];
+        fA_belonged=statistic->relations[index2]->colStats[predicate[4]]->f;
+        belong_index=predicate[4];
+    }
+    statistic->relations[index1]->colStats[predicate[1]]->d=double(max-min)/double(statistic->relations[index1]->colStats[predicate[1]]->u-statistic->relations[index1]->colStats[predicate[1]]->l)*statistic->relations[index1]->colStats[predicate[1]]->d;
+    statistic->relations[index1]->colStats[predicate[1]]->f=double(max-min)/double(statistic->relations[index1]->colStats[predicate[1]]->u-statistic->relations[index1]->colStats[predicate[1]]->l)*statistic->relations[index1]->colStats[predicate[1]]->f;
+    statistic->relations[index2]->colStats[predicate[4]]->d=double(max-min)/double(statistic->relations[index2]->colStats[predicate[4]]->u-statistic->relations[index2]->colStats[predicate[4]]->l)*statistic->relations[index2]->colStats[predicate[4]]->d;
+    statistic->relations[index2]->colStats[predicate[4]]->f=double(max-min)/double(statistic->relations[index2]->colStats[predicate[4]]->u-statistic->relations[index2]->colStats[predicate[4]]->l)*statistic->relations[index2]->colStats[predicate[4]]->f;
+    statistic->relations[index1]->colStats[predicate[1]]->u=statistic->relations[index2]->colStats[predicate[4]]->u=max;
+    statistic->relations[index1]->colStats[predicate[1]]->l=statistic->relations[index2]->colStats[predicate[4]]->l=min;
+    int new_fA_belonged,new_fA_not_belonged;
+    if(who_belongs==index1){
+        new_fA_belonged=statistic->relations[index1]->colStats[predicate[1]]->f;
+        new_fA_not_belonged=statistic->relations[index2]->colStats[predicate[4]]->f;
+    }
+    else{
+        new_fA_not_belonged=statistic->relations[index1]->colStats[predicate[1]]->f;
+        new_fA_belonged=statistic->relations[index2]->colStats[predicate[4]]->f;
+    }
+
+    for(int i=0;i<statistic->relations.size();i++){
+        if(i==who_not_belongs){
+            for(int j=0;j<statistic->relations[i]->numofcols;j++){
+                if(j==not_belong_index)
+                    continue;
+                statistic->relations[i]->colStats[j]->d=statistic->relations[i]->colStats[j]->d*(1.0-pow((1.0-(double)new_fA_not_belonged/(double)fA_not_belonged),((double)statistic->relations[i]->colStats[j]->f/(double)statistic->relations[i]->colStats[j]->d)));
+                statistic->relations[i]->colStats[j]->f=statistic->relations[who_not_belongs]->colStats[not_belong_index]->f;
+            }
+            continue;
+        }
+        for(int j=0;j<statistic->relations[i]->numofcols;j++){
+            if(j==belong_index)
+                continue;
+            statistic->relations[i]->colStats[j]->d=statistic->relations[i]->colStats[j]->d*(1.0-pow((1.0-(double)new_fA_belonged/(double)fA_belonged),((double)statistic->relations[i]->colStats[j]->f/(double)statistic->relations[i]->colStats[j]->d)));
+            statistic->relations[i]->colStats[j]->f=statistic->relations[who_belongs]->colStats[belong_index]->f;
+        }
+    }
+
+}
+
+void calculate_join(SQLquery* query,Statistics* statistic,int *predicate,relation** rels){
+    int index1=-1;
+    int who_belongs=-1;
+    for(int i=0;i<statistic->relations.size();i++){
+        if(statistic->relations[i]->rel_index==predicate[0]){
+            index1=i;
+            who_belongs=index1;
+            break;
+        }
+    }
+    if(index1==-1){
+        index1=statistic->relations.size();
+        int relindex=predicate[0];
+        int rels_index=query->relations[relindex];
+        statisticRelation* statisticRel=new statisticRelation();
+        statisticRel->numofcols=rels[rels_index]->numofcols;
+        statisticRel->colStats=(ColStats**)malloc(statisticRel->numofcols*sizeof(ColStats*));
+        for(int i=0;i<statisticRel->numofcols;i++){
+            statisticRel->colStats[i]=(ColStats*)malloc(sizeof(ColStats));
+            memcpy(statisticRel->colStats[i],rels[rels_index]->colStats[i],sizeof(ColStats));
+        }
+        statisticRel->rel_index=predicate[0];
+        statistic->relations.push_back(statisticRel);
+    }
+    int index2=-1;
+    for(int i=0;i<statistic->relations.size();i++){
+        if(statistic->relations[i]->rel_index==predicate[3]){
+            index2=i;
+            who_belongs=index2;
+            break;
+        }
+    }
+    if(index2==-1){
+        index2=statistic->relations.size();
+        int relindex=predicate[3];
+        int rels_index=query->relations[relindex];
+        statisticRelation* statisticRel=new statisticRelation();
+        statisticRel->numofcols=rels[rels_index]->numofcols;
+        statisticRel->colStats=(ColStats**)malloc(statisticRel->numofcols*sizeof(ColStats*));
+        for(int i=0;i<statisticRel->numofcols;i++){
+            statisticRel->colStats[i]=(ColStats*)malloc(sizeof(ColStats));
+            memcpy(statisticRel->colStats[i],rels[rels_index]->colStats[i],sizeof(ColStats));
+        }
+        statisticRel->rel_index=predicate[3];
+        statistic->relations.push_back(statisticRel);
+    }
+    int who_not_belongs;
+    if(who_belongs==-1)
+        who_belongs=index1;
+    if(who_belongs==index1)
+        who_not_belongs=index2;
+    else
+        who_not_belongs=index1;
+    calculate_prejoin_filter(statistic,index1,index2,who_belongs,who_not_belongs,predicate);
+    int n=statistic->relations[index1]->colStats[predicate[1]]->u-=statistic->relations[index1]->colStats[predicate[1]]->l+1;
+    statistic->relations[index1]->colStats[predicate[1]]->f=statistic->relations[index2]->colStats[predicate[4]]->f=statistic->relations[index1]->colStats[predicate[1]]->f*statistic->relations[index2]->colStats[predicate[4]]->f/n;
+     int dbelong,dnotbelong,belong_index,not_belong_index;
+    if(who_belongs==index1){
+        dbelong= statistic->relations[index1]->colStats[predicate[1]]->d;
+        dnotbelong= statistic->relations[index2]->colStats[predicate[4]]->d;
+        belong_index=predicate[1];
+        not_belong_index=predicate[4];
+    } 
+    else{
+        dnotbelong= statistic->relations[index1]->colStats[predicate[1]]->d;
+        dbelong= statistic->relations[index2]->colStats[predicate[4]]->d;
+        belong_index=predicate[4];
+        not_belong_index=predicate[1];
+    }
+    statistic->relations[index1]->colStats[predicate[1]]->d=statistic->relations[index2]->colStats[predicate[4]]->d=statistic->relations[index1]->colStats[predicate[1]]->d*statistic->relations[index2]->colStats[predicate[4]]->d/n;
+    for(int i=0;i<statistic->relations.size();i++){
+        if(i==who_not_belongs){
+            for(int j=0;j<statistic->relations[i]->numofcols;j++){
+                if(j==not_belong_index)
+                    continue;
+                statistic->relations[i]->colStats[j]->d=statistic->relations[i]->colStats[j]->d*(1.0-pow(1.0-(double)statistic->relations[who_not_belongs]->colStats[not_belong_index]->d /(double)dnotbelong,(double) statistic->relations[i]->colStats[j]->f/(double) statistic->relations[i]->colStats[j]->d));
+                statistic->relations[i]->colStats[j]->f=statistic->relations[who_belongs]->colStats[belong_index]->f;
+            }
+            continue;
+        }
+        for(int j=0;j<statistic->relations[i]->numofcols;j++){
+                if(j==belong_index)
+                    continue;
+                statistic->relations[i]->colStats[j]->d=statistic->relations[i]->colStats[j]->d*(1.0-pow(1.0-(double)statistic->relations[who_belongs]->colStats[belong_index]->d /(double)dbelong,(double) statistic->relations[i]->colStats[j]->f/(double) statistic->relations[i]->colStats[j]->d));
+                statistic->relations[i]->colStats[j]->f=statistic->relations[who_belongs]->colStats[belong_index]->f;
+            }
+    }
+    statistic->score+=statistic->relations[index1]->colStats[predicate[1]]->f;
+    statistic->predicates.push_back(predicate);
+}
+
+void calculate_autocorrelation(SQLquery* query,Statistics* statistic,int *predicate,relation** rels){
+    int index1=-1;
+    for(int i=0;i<statistic->relations.size();i++){
+        if(statistic->relations[i]->rel_index==predicate[0]){
+            index1=i;
+            break;
+        }
+    }
+    if(index1==-1){
+        index1=statistic->relations.size();
+        int relindex=predicate[0];
+        int rels_index=query->relations[relindex];
+        statisticRelation* statisticRel=new statisticRelation();
+        statisticRel->numofcols=rels[rels_index]->numofcols;
+        statisticRel->colStats=(ColStats**)malloc(statisticRel->numofcols*sizeof(ColStats*));
+        for(int i=0;i<statisticRel->numofcols;i++){
+            statisticRel->colStats[i]=(ColStats*)malloc(sizeof(ColStats));
+            memcpy(statisticRel->colStats[i],rels[rels_index]->colStats[i],sizeof(ColStats));
+        }
+        statisticRel->rel_index=predicate[0];
+        statistic->relations.push_back(statisticRel);
+    }
+    int index2=-1;
+    for(int i=0;i<statistic->relations.size();i++){
+        if(statistic->relations[i]->rel_index==predicate[3]){
+            index2=i;
+            break;
+        }
+    }
+    if(index2==-1){
+        index2=statistic->relations.size();
+        int relindex=predicate[3];
+        int rels_index=query->relations[relindex];
+        statisticRelation* statisticRel=new statisticRelation();
+        statisticRel->numofcols=rels[rels_index]->numofcols;
+        statisticRel->colStats=(ColStats**)malloc(statisticRel->numofcols*sizeof(ColStats*));
+        for(int i=0;i<statisticRel->numofcols;i++){
+            statisticRel->colStats[i]=(ColStats*)malloc(sizeof(ColStats));
+            memcpy(statisticRel->colStats[i],rels[rels_index]->colStats[i],sizeof(ColStats));
+        }
+        statisticRel->rel_index=predicate[3];
+        statistic->relations.push_back(statisticRel);
+    }
+
+    int fA=statistic->relations[index1]->colStats[predicate[1]]->f;
+    int n=statistic->relations[index1]->colStats[predicate[1]]->u-statistic->relations[index1]->colStats[predicate[1]]->l+1;
+    statistic->relations[index1]->colStats[predicate[1]]->f=statistic->relations[index2]->colStats[predicate[4]]->f=statistic->relations[index2]->colStats[predicate[4]]->f*statistic->relations[index2]->colStats[predicate[4]]->f/n;
+    for(int i=0;i<statistic->relations.size();i++){
+        for(int j=0;j<statistic->relations[i]->numofcols;j++){
+            if((index1==i && j==predicate[1]) || (index2==i && j==predicate[4]))
+                continue;
+            statistic->relations[i]->colStats[j]->f=statistic->relations[index1]->colStats[predicate[1]]->f;
+        }
+    }
+    statistic->score+=statistic->relations[index1]->colStats[predicate[1]]->f;
+    statistic->predicates.push_back(predicate);
+}
+
+int checkconnection(Statistics* statistic,int *predicate){
+    for(int i=0;i<statistic->relations.size();i++){
+        if(statistic->relations[i]->rel_index==predicate[0] || statistic->relations[i]->rel_index==predicate[3] )
+            return 1;
+    }
+    return 0;
+}
+int check_if_is_calculated(int* predicate1,int* predicate2){
+    for(int i=0;i<5;i++){
+        if(predicate1[i]!=predicate2[i])
+            return 0;
+    }
+    return 1;
+}
+void alltypesfinder(vector<Statistics*> &allstatistics,Statistics* statistic,int num,SQLquery* query,relation** rels){
+    for(int i=0;i<num;i++){
+        int flag=0;
+        for(int j=0;j<statistic->predicates.size();j++){
+            if(check_if_is_calculated(statistic->predicates[j],allstatistics[i]->predicates[0])){
+                flag=1;
+                break;
+            }
+        }
+        if(!checkconnection(statistic,allstatistics[i]->predicates[0]) || flag==1)
+            continue;
+        
+        Statistics* newstatistic=new Statistics(statistic);
+        int ret=determinetype(query,newstatistic,allstatistics[i]->predicates[0]);
+        if(ret==0){
+            calculate_filter(query,newstatistic,allstatistics[i]->predicates[0],rels);
+        }
+        else if(ret==1){
+            calculate_join(query,newstatistic,allstatistics[i]->predicates[0],rels);
+        }
+        else if(ret==2){
+            calculate_autocorrelation(query,newstatistic,allstatistics[i]->predicates[0],rels);
+        }
+        allstatistics.push_back(newstatistic);
+        alltypesfinder(allstatistics,newstatistic,num,query,rels);
+    }
+}
+
+void statistics(SQLquery* query,relation** rels){
+    vector<Statistics*> allstatistics;
+    for(int i=0;i<query->predicates.size();i++){
+        Statistics* newstatistic=new Statistics();
+        int ret=determinetype(query,newstatistic,query->predicates[i]);
+        if(ret==0){
+            calculate_filter(query,newstatistic,query->predicates[i],rels);
+        }
+        else if(ret==1){
+            calculate_join(query,newstatistic,query->predicates[i],rels);
+        }
+        else if(ret==2){
+            calculate_autocorrelation(query,newstatistic,query->predicates[i],rels);
+        }  
+        allstatistics.push_back(newstatistic);
+    }
+    for(int i=0;i<query->predicates.size();i++){
+        alltypesfinder(allstatistics,allstatistics[i],query->predicates.size(),query,rels);
+    }
+    u_int64_t min=2000000000;
+    int minindex=-1;
+    for(int i=0;i<allstatistics.size();i++){
+        if(allstatistics[i]->predicates.size()==query->predicates.size()){
+            if(allstatistics[i]->score<min){
+                minindex=i;
+                min=allstatistics[i]->score;
+            }
+        }
+    }
+    query->predicates.clear();
+    for(int j=0;j<allstatistics[minindex]->predicates.size();j++){
+        query->predicates.push_back(allstatistics[minindex]->predicates[j]);
+    }
 }
 
 void categoriser(SQLquery* query,relation **rels,vector<string*> &results,int numofrels){
@@ -655,6 +1042,7 @@ void categoriser(SQLquery* query,relation **rels,vector<string*> &results,int nu
     //     cout << endl;
     // }
     int numofqueries=query->predicates.size();
+    statistics(query,rels);
     for(int i=0;i<numofqueries;i++){
         int index = i;
         if(query->predicates[index][0]==query->predicates[index][3]){ //1)are at the same relation
