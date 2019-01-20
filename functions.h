@@ -37,9 +37,7 @@ class Statistics{
         Statistics():score(0){}
         Statistics(const Statistics *oldstatistic){
             for(int i=0;i<oldstatistic->predicates.size();i++){
-                int* predicate=(int*)malloc(5*sizeof(int));
-                memcpy(predicate,oldstatistic->predicates[i],5*sizeof(int));
-                predicates.push_back(predicate);
+                predicates.push_back(oldstatistic->predicates[i]);
             }
             score=oldstatistic->score;
             for(int i=0;i<oldstatistic->relations.size();i++){
@@ -53,6 +51,20 @@ class Statistics{
                 }
                 relations.push_back(newrel);
             }
+        }
+        ~Statistics(){
+            for(int i=0;i<predicates.size();i++){
+                predicates.erase(predicates.begin());
+            }
+            for(int i=0;i<relations.size();i++){
+                for(int j=0;j<relations[i]->numofcols;j++){
+                    free(relations[i]->colStats[j]);
+                }
+                free(relations[i]->colStats);
+                delete(relations[i]);
+            }
+            for(int i=0;i<relations.size();i++)
+                relations.erase(relations.begin());
         }
 };
 

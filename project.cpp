@@ -65,8 +65,10 @@ int main(int argc, char **argv){
         free(rels[i]->cols);
         for(int j=0;j<rels[i]->numofcols;j++){
             free(rels[i]->colStats[j]);
+            free(rels[i]->tempcolStats[j]);
         }
         free(rels[i]->colStats);
+        free(rels[i]->tempcolStats);
         delete rels[i];
     }
     free(rels);

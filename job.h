@@ -8,7 +8,7 @@ using namespace std;
 #ifndef JOB_H
 #define JOB_H
 
-#define THREADS 4
+#define THREADS 16
 
 void *threadFun(void*);
 

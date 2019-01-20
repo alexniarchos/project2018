@@ -639,8 +639,6 @@ void differentrelation(SQLquery* query,relation **rels,int index,vector<midResul
     }
 }
 
-vector<int>* queryOptimiser(SQLquery* query){
-}
 
 int determinetype(SQLquery* query,Statistics* statistic,int* predicate){
     int relindex1=predicate[0];
@@ -1028,6 +1026,9 @@ void statistics(SQLquery* query,relation** rels){
     for(int j=0;j<allstatistics[minindex]->predicates.size();j++){
         query->predicates.push_back(allstatistics[minindex]->predicates[j]);
     }
+    for(int i=0;i<allstatistics.size();i++){
+        delete(allstatistics[i]);
+    }
 }
 
 void categoriser(SQLquery* query,relation **rels,vector<string*> &results,int numofrels){
@@ -1050,7 +1051,8 @@ void categoriser(SQLquery* query,relation **rels,vector<string*> &results,int nu
             samerelation(query,rels,index,midresults);  
         }
         else{   //2)belong to different relations
-            // cout << "Different" << endl;
+            // cout << "Different" << endl;ένα-ενα
+
             differentrelation(query,rels,index,midresults);
         }
     }
