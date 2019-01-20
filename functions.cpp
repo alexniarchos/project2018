@@ -960,9 +960,43 @@ int checkconnection(Statistics* statistic,int *predicate){
     }
     return 0;
 }
+int check_if_is_calculated(int* predicate1,int* predicate2){
+    for(int i=0;i<5;i++){
+        if(predicate1[i]!=predicate2[i])
+            return 0;
+    }
+    return 1;
+}
+void alltypesfinder(vector<Statistics*> &allstatistics,Statistics* statistic,int num,SQLquery* query,relation** rels){
+    for(int i=0;i<num;i++){
+        int flag=0;
+        for(int j=0;j<statistic->predicates.size();j++){
+            if(check_if_is_calculated(statistic->predicates[j],allstatistics[i]->predicates[0])){
+                flag=1;
+                break;
+            }
+        }
+        if(!checkconnection(statistic,allstatistics[i]->predicates[0]) || flag==1)
+            continue;
+        
+        Statistics* newstatistic=new Statistics(statistic);
+        int ret=determinetype(query,newstatistic,allstatistics[i]->predicates[0]);
+        if(ret==0){
+            calculate_filter(query,newstatistic,allstatistics[i]->predicates[0],rels);
+        }
+        else if(ret==1){
+            calculate_join(query,newstatistic,allstatistics[i]->predicates[0],rels);
+        }
+        else if(ret==2){
+            calculate_autocorrelation(query,newstatistic,allstatistics[i]->predicates[0],rels);
+        }
+        allstatistics.push_back(newstatistic);
+        alltypesfinder(allstatistics,newstatistic,num,query,rels);
+    }
+}
 
 void statistics(SQLquery* query,relation** rels){
-    vector<Statistics*> starting_statistics;
+    vector<Statistics*> allstatistics;
     for(int i=0;i<query->predicates.size();i++){
         Statistics* newstatistic=new Statistics();
         int ret=determinetype(query,newstatistic,query->predicates[i]);
@@ -974,15 +1008,25 @@ void statistics(SQLquery* query,relation** rels){
         }
         else if(ret==2){
             calculate_autocorrelation(query,newstatistic,query->predicates[i],rels);
-        }
-        starting_statistics.push_back(newstatistic);
+        }  
+        allstatistics.push_back(newstatistic);
     }
-    for(int i=0;i<starting_statistics.size();i++){
-        for(int j=0;j<query->predicates.size();j++){
-            if(j==i || checkconnection(starting_statistics[i],starting_statistics[j]->predicates[0]))
-                continue;
-            
+    for(int i=0;i<query->predicates.size();i++){
+        alltypesfinder(allstatistics,allstatistics[i],query->predicates.size(),query,rels);
+    }
+    u_int64_t min=2000000000;
+    int minindex=-1;
+    for(int i=0;i<allstatistics.size();i++){
+        if(allstatistics[i]->predicates.size()==query->predicates.size()){
+            if(allstatistics[i]->score<min){
+                minindex=i;
+                min=allstatistics[i]->score;
+            }
         }
+    }
+    query->predicates.clear();
+    for(int j=0;j<allstatistics[minindex]->predicates.size();j++){
+        query->predicates.push_back(allstatistics[minindex]->predicates[j]);
     }
 }
 
