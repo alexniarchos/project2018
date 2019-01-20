@@ -35,37 +35,8 @@ class Statistics{
         vector<statisticRelation*> relations;
         uint64_t score;
         Statistics():score(0){}
-        Statistics(const Statistics *oldstatistic){
-            for(int i=0;i<oldstatistic->predicates.size();i++){
-                predicates.push_back(oldstatistic->predicates[i]);
-            }
-            score=oldstatistic->score;
-            for(int i=0;i<oldstatistic->relations.size();i++){
-                statisticRelation* newrel=new statisticRelation();
-                newrel->numofcols=oldstatistic->relations[i]->numofcols;
-                newrel->rel_index=oldstatistic->relations[i]->rel_index;
-                newrel->colStats=(ColStats**)malloc(oldstatistic->relations[i]->numofcols*sizeof(ColStats*));
-                for(int j=0;j<oldstatistic->relations[i]->numofcols;j++){
-                    newrel->colStats[j]=(ColStats*)malloc(sizeof(ColStats));
-                    memcpy(newrel->colStats[j],oldstatistic->relations[i]->colStats[j],sizeof(ColStats));
-                }
-                relations.push_back(newrel);
-            }
-        }
-        ~Statistics(){
-            for(int i=0;i<predicates.size();i++){
-                predicates.erase(predicates.begin());
-            }
-            for(int i=0;i<relations.size();i++){
-                for(int j=0;j<relations[i]->numofcols;j++){
-                    free(relations[i]->colStats[j]);
-                }
-                free(relations[i]->colStats);
-                delete(relations[i]);
-            }
-            for(int i=0;i<relations.size();i++)
-                relations.erase(relations.begin());
-        }
+        Statistics(const Statistics *oldstatistic);
+        ~Statistics();
 };
 
 
